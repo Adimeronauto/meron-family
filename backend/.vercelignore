@@ -1,0 +1,9 @@
+# Never ship secrets or local-only files to Vercel (env comes from the dashboard).
+.env
+../google-credentials.json
+../google-token.json
+seen-chats.log
+*.log
+scripts
+mockups
+node_modules

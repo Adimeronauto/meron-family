@@ -1,0 +1,23 @@
+{
+  "name": "meron-family-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "auth": "node scripts/auth.mjs",
+    "calendars": "node scripts/list-calendars.mjs",
+    "preview": "node scripts/preview.mjs",
+    "telegram:whoami": "node scripts/telegram-whoami.mjs",
+    "bot": "node scripts/bot.mjs",
+    "webhook": "node scripts/set-webhook.mjs",
+    "morning:all": "node scripts/send-morning-all.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
+    "@neondatabase/serverless": "^0.10.0",
+    "googleapis": "^144.0.0"
+  }
+}

@@ -1,0 +1,426 @@
+<style>
+  :root{
+    --amit:#FB7A54; --nadav:#12B5A5; --family:#F0A81E; --test:#E4483D; --school:#5B78E0;
+    --bg:#EDF0F6; --surface:#FFFFFF; --surface-2:#F5F8FC;
+    --ink:#1A2032; --muted:#697386; --faint:#9AA3B4;
+    --line:#E3E8F1;
+    --accent:#5B5BD6;
+    --shadow:0 1px 2px rgba(20,26,44,.05), 0 6px 20px rgba(20,26,44,.06);
+    --shadow-lg:0 8px 30px rgba(20,26,44,.12);
+    --r:18px;
+    --font:"Rubik","Assistant","Heebo","Segoe UI",system-ui,-apple-system,"SF Hebrew",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0E1220; --surface:#161B2A; --surface-2:#1D2333;
+      --ink:#ECEFF7; --muted:#939DB3; --faint:#6B7488;
+      --line:#28304A;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 22px rgba(0,0,0,.35);
+      --shadow-lg:0 10px 34px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#EDF0F6; --surface:#FFFFFF; --surface-2:#F5F8FC;
+    --ink:#1A2032; --muted:#697386; --faint:#9AA3B4; --line:#E3E8F1;
+    --shadow:0 1px 2px rgba(20,26,44,.05), 0 6px 20px rgba(20,26,44,.06);
+    --shadow-lg:0 8px 30px rgba(20,26,44,.12);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1220; --surface:#161B2A; --surface-2:#1D2333;
+    --ink:#ECEFF7; --muted:#939DB3; --faint:#6B7488; --line:#28304A;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 22px rgba(0,0,0,.35);
+    --shadow-lg:0 10px 34px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box}
+  .app{
+    direction:rtl; font-family:var(--font);
+    background:var(--bg); color:var(--ink);
+    min-height:100vh; max-width:460px; margin-inline:auto;
+    padding:0 14px calc(28px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .app[data-person="amit"]{--accent:var(--amit)}
+  .app[data-person="nadav"]{--accent:var(--nadav)}
+  .app[data-person="all"]{--accent:#5B5BD6}
+  .time{font-variant-numeric:tabular-nums; direction:ltr; unicode-bidi:isolate; display:inline-block}
+
+  /* ---- top bar ---- */
+  .bar{
+    position:sticky; top:0; z-index:20;
+    background:color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter:blur(12px);
+    padding:14px 2px 8px; margin:0 -2px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .brand{display:flex; align-items:center; gap:9px}
+  .brand .dot{width:11px; height:11px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent); transition:background .25s}
+  .brand h1{font-size:19px; font-weight:700; letter-spacing:-.01em; margin:0}
+  .brand .sub{margin-inline-start:auto; font-size:12px; color:var(--faint); font-weight:500}
+
+  .seg{display:flex; background:var(--surface-2); border:1px solid var(--line); border-radius:13px; padding:4px; gap:3px}
+  .seg button{
+    flex:1; appearance:none; border:0; background:transparent; cursor:pointer;
+    font-family:inherit; font-size:14px; font-weight:600; color:var(--muted);
+    padding:9px 6px; border-radius:10px; transition:color .18s, background .18s, box-shadow .18s;
+  }
+  .seg.person button[aria-pressed="true"]{color:#fff; background:var(--accent); box-shadow:var(--shadow)}
+  .app[data-person="all"] .seg.person button[aria-pressed="true"]{background:#5B5BD6}
+  .seg.person button .em{font-size:12px; opacity:.85; font-weight:500; margin-inline-start:5px}
+
+  .tabs{display:flex; gap:6px; padding:2px 2px 6px}
+  .tabs button{
+    appearance:none; border:1px solid var(--line); background:var(--surface); cursor:pointer;
+    font-family:inherit; font-size:13px; font-weight:600; color:var(--muted);
+    padding:8px 15px; border-radius:999px; transition:all .18s;
+  }
+  .tabs button[aria-pressed="true"]{color:var(--accent); border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+
+  /* ---- hero next-up ---- */
+  .hero{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+    padding:15px 16px; margin-bottom:12px; box-shadow:var(--shadow);
+    position:relative; overflow:hidden;
+    display:flex; align-items:center; gap:14px;
+  }
+  .hero::before{content:""; position:absolute; inset:0 auto 0 0; width:5px; background:var(--ev,var(--accent))}
+  .hero .glyph{
+    width:52px; height:52px; flex:0 0 auto; border-radius:15px;
+    display:grid; place-items:center; font-size:26px;
+    background:color-mix(in srgb,var(--ev,var(--accent)) 14%,var(--surface));
+  }
+  .hero .txt{min-width:0; flex:1}
+  .hero .k{font-size:11.5px; font-weight:700; letter-spacing:.04em; color:var(--ev,var(--accent)); text-transform:uppercase}
+  .hero .t{font-size:18px; font-weight:700; margin:1px 0 3px; letter-spacing:-.01em; text-wrap:balance}
+  .hero .m{font-size:13.5px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .hero .when{font-weight:700; color:var(--ink)}
+
+  /* ---- tests strip ---- */
+  .tests{
+    display:flex; gap:9px; align-items:flex-start;
+    background:color-mix(in srgb,var(--test) 8%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--test) 22%,var(--line));
+    border-radius:14px; padding:11px 13px; margin-bottom:14px;
+  }
+  .tests .ic{font-size:17px; line-height:1.4}
+  .tests ul{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:4px; font-size:13.5px}
+  .tests b{color:color-mix(in srgb,var(--test) 78%,var(--ink)); font-weight:700}
+  .tests .lbl{font-size:11px; font-weight:700; letter-spacing:.03em; color:color-mix(in srgb,var(--test) 70%,var(--ink)); text-transform:uppercase; margin-bottom:2px}
+
+  /* ---- shared event card ---- */
+  .ev{--ev:var(--accent)}
+  .ev[data-accent="amit"]{--ev:var(--amit)}
+  .ev[data-accent="nadav"]{--ev:var(--nadav)}
+  .ev[data-accent="family"]{--ev:var(--family)}
+  .ev[data-accent="test"]{--ev:var(--test)}
+  .ev[data-accent="school"]{--ev:var(--school)}
+
+  /* ===== DESIGN: LIST ===== */
+  .daygroup{margin-bottom:18px}
+  .dayhead{display:flex; align-items:baseline; gap:8px; padding:2px 4px 9px}
+  .dayhead .big{font-size:15px; font-weight:700}
+  .dayhead .small{font-size:12.5px; color:var(--faint); font-weight:500}
+  .dayhead.today .big{color:var(--accent)}
+  .dayhead .pill{margin-inline-start:auto; font-size:11px; font-weight:700; color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); padding:3px 9px; border-radius:999px}
+  .card{
+    display:flex; align-items:center; gap:13px;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+    padding:13px 14px; margin-bottom:9px; box-shadow:var(--shadow);
+    position:relative; overflow:hidden;
+  }
+  .card::before{content:""; position:absolute; inset-block:0; inset-inline-start:0; width:5px; background:var(--ev)}
+  .card .glyph{width:44px; height:44px; flex:0 0 auto; border-radius:13px; display:grid; place-items:center; font-size:22px; background:color-mix(in srgb,var(--ev) 13%,var(--surface))}
+  .card .body{flex:1; min-width:0}
+  .card .title{font-size:15.5px; font-weight:600; letter-spacing:-.005em; margin-bottom:3px; display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+  .card .meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--muted)}
+  .tag{font-size:10.5px; font-weight:700; letter-spacing:.02em; padding:2px 8px; border-radius:999px; color:var(--ev); background:color-mix(in srgb,var(--ev) 14%,transparent)}
+  .leave{font-size:12px; font-weight:600; color:var(--ev); background:color-mix(in srgb,var(--ev) 12%,transparent); padding:3px 9px; border-radius:999px; display:inline-flex; gap:4px; align-items:center}
+  .who-dot{width:7px;height:7px;border-radius:50%;background:var(--ev);display:inline-block;flex:0 0 auto}
+
+  /* ===== DESIGN: TIMELINE ===== */
+  .tl{position:relative}
+  .tl .tlday{padding:0 0 4px}
+  .tl .tlday > .h{display:flex; align-items:baseline; gap:8px; padding:6px 4px 8px; font-weight:700; font-size:14.5px}
+  .tl .tlday > .h .small{font-size:12px; color:var(--faint); font-weight:500}
+  .tl .tlday.today > .h{color:var(--accent)}
+  .rail{position:relative; padding-inline-start:26px; margin-inline-start:8px}
+  .rail::before{content:""; position:absolute; inset-block:2px 2px; inset-inline-start:5px; width:2px; background:var(--line); border-radius:2px}
+  .node{position:relative; padding:2px 0 16px}
+  .node::before{content:""; position:absolute; inset-inline-start:-24px; top:6px; width:12px; height:12px; border-radius:50%; background:var(--ev); box-shadow:0 0 0 3px var(--bg), 0 0 0 5px color-mix(in srgb,var(--ev) 30%,transparent)}
+  .node .row{display:flex; gap:11px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:15px; padding:10px 12px; box-shadow:var(--shadow)}
+  .node .tm{font-size:13px; font-weight:700; color:var(--ev); min-width:44px}
+  .node .em{font-size:19px}
+  .node .ti{font-size:14.5px; font-weight:600}
+  .node .lv{margin-inline-start:auto; font-size:11.5px; font-weight:600; color:var(--ev); background:color-mix(in srgb,var(--ev) 12%,transparent); padding:2px 8px; border-radius:999px; white-space:nowrap}
+
+  /* ===== DESIGN: DAY ===== */
+  .chips{display:flex; gap:7px; overflow-x:auto; padding:2px 2px 12px; scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto; width:52px; appearance:none; border:1px solid var(--line); background:var(--surface); cursor:pointer;
+    border-radius:15px; padding:9px 0; display:flex; flex-direction:column; align-items:center; gap:3px; font-family:inherit; transition:all .18s;
+  }
+  .chip .dn{font-size:12px; font-weight:600; color:var(--muted)}
+  .chip .dd{font-size:14px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums}
+  .chip .mk{width:5px; height:5px; border-radius:50%; background:transparent}
+  .chip.has .mk{background:var(--accent)}
+  .chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); box-shadow:var(--shadow-lg)}
+  .chip[aria-pressed="true"] .dn,.chip[aria-pressed="true"] .dd{color:#fff}
+  .chip[aria-pressed="true"] .mk{background:rgba(255,255,255,.9)}
+  .app[data-person="all"] .chip[aria-pressed="true"]{background:#5B5BD6;border-color:#5B5BD6}
+  .app[data-person="all"] .chip.has .mk{background:#5B5BD6}
+
+  .dayview .dtitle{font-size:20px; font-weight:700; letter-spacing:-.01em; padding:4px 4px 12px; display:flex; align-items:baseline; gap:9px}
+  .dayview .dtitle .small{font-size:13px; color:var(--faint); font-weight:500}
+  .bigcard{
+    display:flex; align-items:center; gap:15px;
+    background:var(--surface); border:1px solid var(--line); border-radius:20px;
+    padding:17px 17px; margin-bottom:11px; box-shadow:var(--shadow); position:relative; overflow:hidden;
+  }
+  .bigcard::before{content:""; position:absolute; inset-block:0; inset-inline-start:0; width:6px; background:var(--ev)}
+  .bigcard .glyph{width:58px;height:58px;flex:0 0 auto;border-radius:17px;display:grid;place-items:center;font-size:29px;background:color-mix(in srgb,var(--ev) 14%,var(--surface))}
+  .bigcard .title{font-size:18px;font-weight:700;letter-spacing:-.01em;margin-bottom:5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .bigcard .meta{display:flex;gap:9px;flex-wrap:wrap;align-items:center;font-size:14px;color:var(--muted)}
+
+  .empty{text-align:center; color:var(--faint); padding:46px 20px; font-size:15px}
+  .empty .e{font-size:40px; display:block; margin-bottom:10px; opacity:.7}
+
+  .foot{text-align:center; color:var(--faint); font-size:11.5px; padding:20px 0 4px}
+
+  .rise{animation:rise .32s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){.rise{animation:none}}
+  button:focus-visible{outline:2.5px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="app" data-person="all" lang="he" dir="rtl">
+  <header class="bar">
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>השבוע שלנו</h1>
+      <span class="sub">שבוע לדוגמה</span>
+    </div>
+    <div class="seg person" role="group" aria-label="בחירת אדם">
+      <button data-p="all" aria-pressed="true">הכל</button>
+      <button data-p="amit" aria-pressed="false">עמית<span class="em">15</span></button>
+      <button data-p="nadav" aria-pressed="false">נדב<span class="em">11</span></button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="group" aria-label="סגנון תצוגה">
+    <button data-d="list" aria-pressed="true">רשימה</button>
+    <button data-d="tl" aria-pressed="false">ציר זמן</button>
+    <button data-d="day" aria-pressed="false">יום־יום</button>
+  </nav>
+
+  <main class="stage">
+    <div id="hero"></div>
+    <div id="tests"></div>
+    <div id="view"></div>
+  </main>
+
+  <footer class="foot">שלושה עיצובים · תבחרו יחד את האהוב עליכם</footer>
+</div>
+
+<script>
+(function(){
+  var NOWD=0, NOWM=14*60+30; // demo "now": Sunday 14:30
+  var DAYS=[
+    {d:"ראשון",s:"א׳",date:"2.8"},
+    {d:"שני",s:"ב׳",date:"3.8"},
+    {d:"שלישי",s:"ג׳",date:"4.8"},
+    {d:"רביעי",s:"ד׳",date:"5.8"},
+    {d:"חמישי",s:"ה׳",date:"6.8"},
+    {d:"שישי",s:"ו׳",date:"7.8"},
+    {d:"שבת",s:"ש׳",date:"8.8"}
+  ];
+  var EV=[
+    {who:"amit",day:0,start:"16:00",end:"17:00",leave:"15:40",title:"שיעור עם שירה",icon:"🎵",kind:"activity"},
+    {who:"nadav",day:0,start:"18:00",end:"19:30",leave:"17:00",title:"אימון בדמינטון",icon:"🏸",kind:"activity"},
+    {who:"nadav",day:1,start:"08:15",title:"מבחן במתמטיקה",icon:"📝",kind:"test"},
+    {who:"amit",day:1,start:"17:00",end:"17:45",leave:"16:40",title:"שיעור גיטרה",icon:"🎸",kind:"activity"},
+    {who:"amit",day:2,start:"08:00",title:"מתכונת בפיזיקה",icon:"📝",kind:"test"},
+    {who:"both",day:2,start:"19:00",title:"ארוחת ערב עם סבא וסבתא",icon:"🎉",kind:"family"},
+    {who:"amit",day:3,start:"16:00",end:"17:00",leave:"15:40",title:"שיעור עם שירה",icon:"🎵",kind:"activity"},
+    {who:"nadav",day:3,start:"18:00",end:"19:30",leave:"17:00",title:"אימון בדמינטון",icon:"🏸",kind:"activity"},
+    {who:"nadav",day:4,start:"09:00",title:"טיול שכבתי",icon:"🚌",kind:"school"},
+    {who:"amit",day:4,start:"17:00",end:"17:45",leave:"16:40",title:"שיעור גיטרה",icon:"🎸",kind:"activity"},
+    {who:"both",day:5,start:"13:00",title:"ארוחת שישי אצל סבתא",icon:"🕯️",kind:"family"}
+  ];
+
+  var app=document.querySelector(".app");
+  var elHero=document.getElementById("hero");
+  var elTests=document.getElementById("tests");
+  var elView=document.getElementById("view");
+  var person="all", design="list", selDay=NOWD;
+
+  function esc(s){return String(s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+  function toMin(t){var p=t.split(":");return +p[0]*60+ +p[1]}
+  function accent(e){return e.kind==="test"?"test":(e.who==="both"?"family":e.who)}
+  function visibleAll(){return EV.filter(function(e){return person==="all"?true:(e.who===person||e.who==="both")})}
+  function timeStr(e){return e.end? e.start+"–"+e.end : e.start}
+  function ord(e){return e.day*10000+toMin(e.start)}
+  function whoName(e){return e.who==="both"?"שניהם":(e.who==="amit"?"עמית":"נדב")}
+
+  function tagFor(e){
+    if(e.kind==="test") return '<span class="tag">מבחן</span>';
+    if(e.kind==="family") return '<span class="tag">משפחה</span>';
+    if(e.kind==="school") return '<span class="tag">בית ספר</span>';
+    return "";
+  }
+  function whoBadge(e){ // only in "all" mode, to tell kids apart
+    if(person!=="all") return "";
+    return '<span class="tag"><span class="who-dot"></span>'+whoName(e)+'</span>';
+  }
+  function leavePill(e){
+    if(!e.leave) return "";
+    return '<span class="leave">🚶 יציאה <span class="time">'+e.leave+'</span></span>';
+  }
+
+  function relHour(diff){
+    var h=Math.floor(diff/60), m=diff%60, half=(m>=30);
+    if(h===0) return "עוד "+m+" דק׳";
+    var w=h===1?"שעה":(h===2?"שעתיים":h+" שעות");
+    return "עוד "+w+(half?" וחצי":"");
+  }
+  function relWhen(e){
+    if(e.day===NOWD){var d=toMin(e.start)-NOWM; return d>0?relHour(d):"עכשיו";}
+    if(e.day===NOWD+1) return "מחר · "+e.start;
+    return DAYS[e.day].d+" · "+e.start;
+  }
+  function relDays(day){
+    var n=day-NOWD;
+    if(n===0)return "היום"; if(n===1)return "מחר"; if(n===2)return "בעוד יומיים";
+    return "בעוד "+n+" ימים";
+  }
+
+  function renderHero(){
+    var up=visibleAll().filter(function(e){return ord(e)>=NOWD*10000+NOWM}).sort(function(a,b){return ord(a)-ord(b)})[0];
+    if(!up){elHero.innerHTML="";return;}
+    elHero.className="hero rise"; elHero.style.cssText="";
+    elHero.setAttribute("data-x","");
+    elHero.style.setProperty("--ev","var(--"+accent(up)+")");
+    elHero.innerHTML=
+      '<div class="glyph">'+up.icon+'</div>'+
+      '<div class="txt">'+
+        '<div class="k">הבא בתור</div>'+
+        '<div class="t">'+esc(up.title)+'</div>'+
+        '<div class="m"><span class="when">'+relWhen(up)+'</span>'+
+          '<span>· <span class="time">'+timeStr(up)+'</span></span>'+
+          (up.leave?'<span>· יציאה <span class="time">'+up.leave+'</span></span>':'')+
+          (person==="all"?'<span>· '+whoName(up)+'</span>':'')+
+        '</div>'+
+      '</div>';
+  }
+
+  function renderTests(){
+    var t=visibleAll().filter(function(e){return e.kind==="test"}).sort(function(a,b){return ord(a)-ord(b)});
+    if(!t.length){elTests.innerHTML="";return;}
+    var items=t.map(function(e){return "<li><b>"+esc(e.title)+"</b> — "+relDays(e.day)+"</li>"}).join("");
+    elTests.className="tests rise";
+    elTests.innerHTML='<div class="ic">📝</div><div><div class="lbl">מבחנים קרובים</div><ul>'+items+"</ul></div>";
+  }
+
+  function cardHTML(e){
+    return '<div class="card ev" data-accent="'+accent(e)+'">'+
+      '<div class="glyph">'+e.icon+'</div>'+
+      '<div class="body">'+
+        '<div class="title">'+esc(e.title)+tagFor(e)+whoBadge(e)+'</div>'+
+        '<div class="meta"><span class="time">'+timeStr(e)+'</span>'+leavePill(e)+'</div>'+
+      '</div></div>';
+  }
+
+  function renderList(){
+    var vis=visibleAll(); var html="";
+    for(var i=0;i<DAYS.length;i++){
+      var evs=vis.filter(function(e){return e.day===i}).sort(function(a,b){return toMin(a.start)-toMin(b.start)});
+      if(!evs.length) continue;
+      var today=i===NOWD;
+      html+='<div class="daygroup rise"><div class="dayhead'+(today?" today":"")+'">'+
+        '<span class="big">'+relDays(i)+'</span>'+
+        '<span class="small">'+DAYS[i].d+" · "+DAYS[i].date+'</span>'+
+        (today?'<span class="pill">היום</span>':'')+
+        '</div>'+evs.map(cardHTML).join("")+'</div>';
+    }
+    if(!html) html=emptyWeek();
+    elView.innerHTML=html;
+  }
+
+  function renderTL(){
+    var vis=visibleAll(); var html='<div class="tl">';
+    for(var i=0;i<DAYS.length;i++){
+      var evs=vis.filter(function(e){return e.day===i}).sort(function(a,b){return toMin(a.start)-toMin(b.start)});
+      if(!evs.length) continue;
+      var today=i===NOWD;
+      html+='<div class="tlday'+(today?" today":"")+' rise"><div class="h">'+relDays(i)+
+        ' <span class="small">'+DAYS[i].d+" · "+DAYS[i].date+'</span></div><div class="rail">';
+      html+=evs.map(function(e){
+        return '<div class="node ev" data-accent="'+accent(e)+'"><div class="row">'+
+          '<span class="tm time">'+e.start+'</span>'+
+          '<span class="em">'+e.icon+'</span>'+
+          '<span class="ti">'+esc(e.title)+'</span>'+
+          (e.leave?'<span class="lv">יציאה <span class="time">'+e.leave+'</span></span>':(tagFor(e)?'<span class="lv">'+({test:"מבחן",family:"משפחה",school:"בי״ס"}[e.kind]||"")+'</span>':''))+
+          '</div></div>';
+      }).join("");
+      html+='</div></div>';
+    }
+    html+='</div>';
+    if(html==='<div class="tl"></div>') html=emptyWeek();
+    elView.innerHTML=html;
+  }
+
+  function renderDay(){
+    var vis=visibleAll();
+    var chips='<div class="chips" role="group" aria-label="בחירת יום">';
+    for(var i=0;i<DAYS.length;i++){
+      var has=vis.some(function(e){return e.day===i});
+      chips+='<button class="chip'+(has?" has":"")+'" data-day="'+i+'" aria-pressed="'+(i===selDay)+'">'+
+        '<span class="dn">'+DAYS[i].s+'</span><span class="dd">'+DAYS[i].date+'</span><span class="mk"></span></button>';
+    }
+    chips+='</div>';
+    var evs=vis.filter(function(e){return e.day===selDay}).sort(function(a,b){return toMin(a.start)-toMin(b.start)});
+    var body;
+    if(evs.length){
+      body='<div class="dayview"><div class="dtitle">'+relDays(selDay)+' <span class="small">'+DAYS[selDay].d+" · "+DAYS[selDay].date+'</span></div>'+
+        evs.map(function(e){
+          return '<div class="bigcard ev rise" data-accent="'+accent(e)+'">'+
+            '<div class="glyph">'+e.icon+'</div>'+
+            '<div class="body"><div class="title">'+esc(e.title)+tagFor(e)+whoBadge(e)+'</div>'+
+            '<div class="meta"><span class="time">'+timeStr(e)+'</span>'+leavePill(e)+'</div></div></div>';
+        }).join("")+'</div>';
+    } else {
+      body='<div class="empty rise"><span class="e">🌤️</span>אין אירועים ביום הזה<br>יום חופשי</div>';
+    }
+    elView.innerHTML=chips+body;
+    elView.querySelectorAll(".chip").forEach(function(b){
+      b.addEventListener("click",function(){selDay=+b.dataset.day; renderDay();});
+    });
+  }
+
+  function emptyWeek(){return '<div class="empty rise"><span class="e">🎈</span>אין אירועים השבוע</div>'}
+
+  function renderView(){
+    if(design==="list") renderList();
+    else if(design==="tl") renderTL();
+    else renderDay();
+  }
+  function renderAll(){renderHero(); renderTests(); renderView();}
+
+  document.querySelectorAll(".seg.person button").forEach(function(b){
+    b.addEventListener("click",function(){
+      person=b.dataset.p; app.setAttribute("data-person",person);
+      document.querySelectorAll(".seg.person button").forEach(function(x){x.setAttribute("aria-pressed",x===b)});
+      renderAll();
+    });
+  });
+  document.querySelectorAll(".tabs button").forEach(function(b){
+    b.addEventListener("click",function(){
+      design=b.dataset.d;
+      document.querySelectorAll(".tabs button").forEach(function(x){x.setAttribute("aria-pressed",x===b)});
+      renderView();
+    });
+  });
+
+  renderAll();
+})();
+</script>

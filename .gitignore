@@ -1,0 +1,26 @@
+# Secrets — never commit these
+google-credentials.json
+google-token.json
+.env
+.env.local
+*.token.json
+Telegram token.txt
+
+# Personal chat/data logs — not code
+seen-chats.log
+
+# Local tool state
+.gstack/
+.vercel
+
+# Node
+node_modules/
+
+# Android build output
+spike-overlay/app/build/
+spike-overlay/.gradle/
+spike-overlay/local.properties
+*.apk
+
+# Toolchain (lives outside the repo anyway)
+android-dev/

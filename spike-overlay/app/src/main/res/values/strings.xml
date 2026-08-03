@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">תזכורות משפחה</string>
+
+    <string name="got_it">הבנתי</string>
+    <string name="snooze_5">תזכיר לי עוד\n5 דקות</string>
+    <string name="leave_now">צריך לצאת עכשיו</string>
+    <string name="starts_at">מתחיל ב-%1$s</string>
+
+    <string name="service_running">תזכורת פעילה</string>
+    <string name="channel_service">שירות תזכורות</string>
+    <string name="channel_alert">תזכורות שיעורים</string>
+
+    <string name="section_permissions">הרשאות</string>
+    <string name="section_test">בדיקה מיידית</string>
+    <string name="section_soak">בדיקת עומס (3 ימים)</string>
+
+    <string name="grant_overlay">אפשר חלון מעל אפליקציות</string>
+    <string name="grant_exact_alarm">אפשר התראות מדויקות</string>
+    <string name="grant_notifications">אפשר התראות</string>
+    <string name="open_app_settings">הגדרות האפליקציה</string>
+
+    <string name="fire_snoozeable">הצג כרטיס בעוד דקה (עם נודניק)</string>
+    <string name="fire_final">הצג כרטיס בעוד דקה (בלי נודניק)</string>
+
+    <string name="start_soak">התחל בדיקת עומס</string>
+    <string name="stop_soak">עצור בדיקת עומס</string>
+    <string name="clear_log">נקה יומן</string>
+    <string name="recent_fires">הפעלות אחרונות</string>
+</resources>
