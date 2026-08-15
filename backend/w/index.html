@@ -337,8 +337,14 @@
     if (mS===mE) return dayNum(s)+"–"+dayNum(e)+" ב"+mE;
     return dayNum(s)+" ב"+mS+" – "+dayNum(e)+" ב"+mE;
   }
+  function shiftWeek(delta){
+    S.weekSel = addDays(S.weekSel, delta*7);
+    render();
+  }
   function weekView(){
     var start=weekStart(S.weekSel);
+    var nav='<div class="mnav"><button data-wprev aria-label="השבוע הקודם">›</button>'+
+            '<button data-wnext aria-label="השבוע הבא">‹</button></div>';
     var strip='<div class="strip">';
     for (var i=0;i<7;i++){
       var k=addDays(start,i), has=eventsOn(k).length>0;
@@ -350,7 +356,7 @@
     var evs=eventsOn(S.weekSel);
     var body = evs.length ? '<div class="pad">'+evs.map(evCard).join("")+'</div>'
                           : '<div class="empty">אין אירועים ביום זה</div>';
-    return strip+'<div class="stage">'+body+'</div>';
+    return nav+strip+'<div class="stage">'+body+'</div>';
   }
 
   function monthView(){
@@ -416,9 +422,7 @@
     [["amit","עמית"],["nadav","נדב"]].forEach(function(p){
       var mine=open.filter(function(t){return t.owner===p[0];});
       html+='<div class="group-h">'+p[1]+'</div>';
-      html+= mine.length ? mine.map(function(t){
-        return '<div class="krow"><span class="krow-ttl">'+esc(t.title)+'</span><span class="chk"></span></div>';
-      }).join("") : '<div class="tasks-empty">אין משימות פתוחות</div>';
+      html+= mine.length ? mine.map(openRow).join("") : '<div class="tasks-empty">אין משימות פתוחות</div>';
     });
     return html;
   }
@@ -446,6 +450,8 @@
     });
     var mp=app.querySelector("[data-mprev]"); if(mp) mp.onclick=function(){ shiftMonth(-1); };
     var mn=app.querySelector("[data-mnext]"); if(mn) mn.onclick=function(){ shiftMonth(1); };
+    var wp=app.querySelector("[data-wprev]"); if(wp) wp.onclick=function(){ shiftWeek(-1); };
+    var wn=app.querySelector("[data-wnext]"); if(wn) wn.onclick=function(){ shiftWeek(1); };
 
     var tog=app.querySelector("[data-sheet-toggle]");
     if (tog) tog.onclick=function(){ S.sheet = S.sheet==="expanded"?"collapsed":"expanded"; render(); };
