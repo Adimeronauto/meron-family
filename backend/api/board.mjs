@@ -19,8 +19,11 @@ export default async function handler(req, res) {
   try {
     const now = Date.now();
     const auth = await getClient();
-    // A generous window so the day, week and several months of navigation have data without paging.
-    const schedule = await buildSchedule(auth, { fromMs: now - 31 * DAY, toMs: now + 150 * DAY });
+    // A generous window so the day, week and month navigation have data without paging. 365 days
+    // forward — schools publish a full year's worth of mock-exam/activity dates at once, and a
+    // shorter window (previously 150 days) silently made those later events vanish from the app
+    // even though the month view lets you keep flipping forward indefinitely.
+    const schedule = await buildSchedule(auth, { fromMs: now - 31 * DAY, toMs: now + 365 * DAY });
 
     const list = kid === "both" ? schedule.all : schedule[kid];
     const events = list.map((i) => ({

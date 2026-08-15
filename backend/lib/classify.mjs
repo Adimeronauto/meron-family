@@ -10,6 +10,7 @@ import {
   SUBMISSION_KEYWORDS,
   EXCLUDE_TITLE_KEYWORDS,
   NO_REMINDER_MARKER,
+  TIMEZONE,
 } from "../config/rules.mjs";
 
 // Match a keyword only when it stands as a whole token — a Hebrew-letter boundary on each side —
@@ -166,7 +167,7 @@ export function classifyEvent(calendar, event) {
 
 function eventStartMs(event) {
   if (event.start?.dateTime) return new Date(event.start.dateTime).getTime();
-  if (event.start?.date) return new Date(event.start.date + "T00:00:00+03:00").getTime();
+  if (event.start?.date) return localMidnightMs(event.start.date);
   return null;
 }
 
@@ -174,4 +175,29 @@ function eventEndMs(event) {
   // Only meaningful for timed events; all-day "end.date" is exclusive and not a clock time.
   if (event.end?.dateTime) return new Date(event.end.dateTime).getTime();
   return null;
+}
+
+/**
+ * UTC ms for local midnight of `dateStr` (YYYY-MM-DD) in TIMEZONE, correct across both Israel
+ * Standard Time (winter, +2) and Israel Daylight Time (summer, +3) — a fixed "+03:00" offset
+ * (the previous approach) is only right for roughly half the year and silently shifts every
+ * winter all-day event (a bagrut exam date, a holiday) a day earlier than the real calendar date.
+ */
+function localMidnightMs(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const guess = Date.UTC(y, m - 1, d); // within a few hours of the true instant either way
+  const offsetMin = tzOffsetMinutesAt(guess, TIMEZONE);
+  return guess - offsetMin * 60_000;
+}
+
+/** Minutes east of UTC that `timeZone` is at instant `ms` (e.g. 120 for IST, 180 for IDT). */
+function tzOffsetMinutesAt(ms, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(ms).reduce((o, p) => ((o[p.type] = p.value), o), {});
+  const asUTC = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+  return Math.round((asUTC - ms) / 60_000);
 }
