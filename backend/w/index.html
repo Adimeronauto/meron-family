@@ -257,8 +257,11 @@
   }
   function ownerTag(e){
     if (e.isTest) return '<span class="tag test">מבחן</span>';
-    if (S.kid==="both" && (e.owner==="amit"||e.owner==="nadav"))
-      return '<span class="tag">'+(e.owner==="amit"?"עמית":"נדב")+'</span>';
+    if (S.kid==="both"){
+      if (e.owner==="amit") return '<span class="tag">עמית</span>';
+      if (e.owner==="nadav") return '<span class="tag">נדב</span>';
+      if (e.owner==="both") return '<span class="tag">עמית ונדב</span>';
+    }
     return "";
   }
 
