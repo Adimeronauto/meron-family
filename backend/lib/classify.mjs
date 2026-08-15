@@ -9,6 +9,7 @@ import {
   HOMEWORK_KEYWORDS,
   SUBMISSION_KEYWORDS,
   EXCLUDE_TITLE_KEYWORDS,
+  NO_REMINDER_MARKER,
 } from "../config/rules.mjs";
 
 // Match a keyword only when it stands as a whole token — a Hebrew-letter boundary on each side —
@@ -52,6 +53,11 @@ export function resolveOwner(calendar, title) {
   return "both";
 }
 
+/** True if the title carries the "don't remind me" marker — skip the overlay for this event. */
+export function hasNoReminderMarker(title) {
+  return (title ?? "").includes(NO_REMINDER_MARKER);
+}
+
 export function isTest(title) {
   const text = title ?? "";
   return TEST_KEYWORDS.some((kw) => text.includes(kw));
@@ -90,6 +96,9 @@ export function leadMinutesFor(title) {
 export function cleanTitle(title) {
   if (!title) return "";
   let t = title;
+
+  // The "don't remind me" marker is a control signal, not display text.
+  t = t.split(NO_REMINDER_MARKER).join("");
 
   // A leading "name prefix:" segment (e.g. "עמית ונדב: שיעור גיטרה") — drop it whole, including
   // the connector "ו" and the colon, when everything before the first colon is just names.
@@ -142,8 +151,13 @@ export function classifyEvent(calendar, event) {
     allDay: Boolean(event.start?.date && !event.start?.dateTime),
     isTest: test,
     examLabel, // "מבחן" | "מטלה" | "הגשה" | null — belongs in the tests/homework list when non-null
-    // Reminder timing only applies to overlay-eligible, non-test, timed activities.
-    overlayEligible: calendar.overlay && !test && !Boolean(event.start?.date && !event.start?.dateTime),
+    // Reminder timing only applies to overlay-eligible, non-test, timed activities that aren't
+    // marked with the "don't remind me" emoji.
+    overlayEligible:
+      calendar.overlay &&
+      !test &&
+      !Boolean(event.start?.date && !event.start?.dateTime) &&
+      !hasNoReminderMarker(rawTitle),
     leadMinutes: lead,
     reminderAtMs: startMs - lead * 60_000,
     noSnoozeAfterMinutes: noSnoozeAfterMinutes(lead),

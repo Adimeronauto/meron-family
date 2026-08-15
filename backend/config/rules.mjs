@@ -34,6 +34,12 @@ export const SUBMISSION_KEYWORDS = ["הגשה", "להגיש"];
 // boundaries (never as a substring of a longer word like קריאה / כתיבה).
 export const EXCLUDE_TITLE_KEYWORDS = ["יא", "יב", "כדורסל", "כיתות רקיע", "מחול", "אמנות"];
 
+// Add this emoji anywhere in an event's title (right in Google Calendar, on any calendar) to
+// silently skip its overlay reminder — the event still shows normally in the day/week/month
+// views, it just won't interrupt a game. Handy for one-off events you don't want a phone alarm
+// for (a doctor visit, a family dinner, etc.) without touching this file.
+export const NO_REMINDER_MARKER = "🔕";
+
 // Days before a test to send a heads-up.
 export const TEST_ALERT_DAYS = [5, 3];
 

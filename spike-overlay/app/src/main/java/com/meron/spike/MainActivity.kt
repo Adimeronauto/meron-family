@@ -8,7 +8,9 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
@@ -58,6 +60,21 @@ class MainActivity : AppCompatActivity() {
                     Uri.parse("package:$packageName"),
                 )
             )
+        }
+
+        findViewById<EditText>(R.id.tokenInput).setText(Prefs.token(this).orEmpty())
+
+        findViewById<Button>(R.id.saveAndSync).setOnClickListener {
+            val raw = findViewById<EditText>(R.id.tokenInput).text?.toString().orEmpty()
+            val token = extractToken(raw)
+            if (token.isNullOrBlank()) {
+                Toast.makeText(this, "לא זיהיתי קוד תקין", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            Prefs.setToken(this, token)
+            Toast.makeText(this, "נשמר — מסנכרן…", Toast.LENGTH_SHORT).show()
+            ContextCompat.startForegroundService(this, Intent(this, SyncService::class.java))
+            refresh()
         }
 
         // One minute out, with a 20-minute "lesson" — snooze should be offered.
@@ -150,6 +167,29 @@ class MainActivity : AppCompatActivity() {
             .reversed()
             .joinToString("\n") { stamp(it) }
             .ifEmpty { "אין עדיין הפעלות" }
+
+        findViewById<TextView>(R.id.syncStatus).text = buildString {
+            val token = Prefs.token(this@MainActivity)
+            if (token.isNullOrBlank()) {
+                append("אין קוד שמור עדיין")
+            } else {
+                val lastSync = Prefs.lastSyncAt(this@MainActivity)
+                appendLine("סונכרן לאחרונה: ${if (lastSync > 0) stamp(lastSync) else "עדיין לא"}")
+                appendLine("תזכורות פעילות: ${Prefs.armedReminders(this@MainActivity).size}")
+                Prefs.lastSyncError(this@MainActivity)?.let { append("⚠️ שגיאת סנכרון: $it") }
+            }
+        }.trim()
+    }
+
+    /** Accepts either a bare token or a full board link (".../w/?t=<token>") and returns just the token. */
+    private fun extractToken(raw: String): String? {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) return null
+        if (!trimmed.contains("t=")) return trimmed
+        return runCatching { Uri.parse(trimmed).getQueryParameter("t") }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?: trimmed
     }
 
     private fun tick(ok: Boolean) = if (ok) "✅" else "❌"

@@ -12,8 +12,14 @@
     <string name="channel_alert">תזכורות שיעורים</string>
 
     <string name="section_permissions">הרשאות</string>
+    <string name="section_sync">סנכרון עם הלוח</string>
     <string name="section_test">בדיקה מיידית</string>
     <string name="section_soak">בדיקת עומס (3 ימים)</string>
+
+    <string name="token_hint">קישור או קוד אישי מהלוח</string>
+    <string name="save_and_sync">שמור וסנכרן עכשיו</string>
+    <string name="sync_running">מסנכרן לוח שנה…</string>
+    <string name="channel_sync">סנכרון לוח שנה</string>
 
     <string name="grant_overlay">אפשר חלון מעל אפליקציות</string>
     <string name="grant_exact_alarm">אפשר התראות מדויקות</string>
