@@ -35,18 +35,31 @@ export async function createLesson(auth, lesson) {
   return data;
 }
 
-/** Move/retime an existing lesson. Only the date/time change; the title is left as-is. */
-export async function updateLesson(auth, eventId, { date, startTime, durationMinutes }) {
+/**
+ * Move/retime an existing lesson, and optionally rename it too.
+ *
+ * @param opts { date, startTime, durationMinutes, title?, owner? }
+ *   title/owner are only needed when renaming — the title alone is not written as-is; it's
+ *   re-prefixed with the kid's name the same way createLesson() does, since routing (resolveOwner)
+ *   reads ownership from that prefix. Passing title without owner would risk saving an
+ *   un-prefixed title that silently falls through to "both" the next time the schedule is read.
+ */
+export async function updateLesson(auth, eventId, { date, startTime, durationMinutes, title, owner }) {
   const calendar = google.calendar({ version: "v3", auth });
   const startWall = `${date}T${pad(startTime)}:00`;
   const endWall = addMinutesWall(date, startTime, durationMinutes || 60);
+  const requestBody = {
+    start: { dateTime: startWall, timeZone: TIMEZONE },
+    end: { dateTime: endWall, timeZone: TIMEZONE },
+  };
+  if (title) {
+    const prefix = NAME_PREFIX[owner] ?? NAME_PREFIX.both;
+    requestBody.summary = `${prefix}: ${title}`.trim();
+  }
   const { data } = await calendar.events.patch({
     calendarId: WRITE_CALENDAR_ID,
     eventId,
-    requestBody: {
-      start: { dateTime: startWall, timeZone: TIMEZONE },
-      end: { dateTime: endWall, timeZone: TIMEZONE },
-    },
+    requestBody,
   });
   return data;
 }

@@ -30,9 +30,15 @@ export async function handleMessage(auth, msg, store, { onSeen, tasks } = {}) {
   }
 
   // A parent sees both kids; a kid sees only their own events as context.
+  //
+  // Fetch a full year so change/delete can find and edit a lesson however far out it is — but
+  // Claude only gets the near-term slice as text context (compact, matches how far out a casual
+  // reference like "the guitar lesson" realistically means), so the AI prompt size and cost don't
+  // grow with the wider fetch.
   const ownerKeys = asker.role === "parent" ? ["amit", "nadav"] : [asker.role];
-  const schedule = await buildSchedule(auth, { toMs: Date.now() + 14 * 864e5 });
-  const scheduleText = scheduleToText(schedule.all, ownerKeys);
+  const schedule = await buildSchedule(auth, { toMs: Date.now() + 365 * 864e5 });
+  const nearTerm = schedule.all.filter((i) => i.startMs <= Date.now() + 14 * 864e5);
+  const scheduleText = scheduleToText(nearTerm, ownerKeys);
 
   let parsed;
   try {
@@ -136,7 +142,7 @@ export async function handleMessage(auth, msg, store, { onSeen, tasks } = {}) {
     );
 
     if (candidates.length === 0) {
-      await sendMessage(chatId, "לא מצאתי שיעור כזה בשבועיים הקרובים ביומן המשפחה.");
+      await sendMessage(chatId, "לא מצאתי שיעור כזה ביומן המשפחה.");
       return;
     }
     if (candidates.length > 1) {
@@ -162,8 +168,16 @@ export async function handleMessage(auth, msg, store, { onSeen, tasks } = {}) {
       startTime: parsed.startTime || orig.time,
       durationMinutes: parsed.durationMinutes || durMin,
     };
+    // Renaming needs the matched event's own owner (not parsed.person, which may be "unknown")
+    // so the "<name>: <title>" prefix that owner-routing depends on is reconstructed correctly.
+    const newTitle = (parsed.newTitle || "").trim();
+    if (newTitle) { newLesson.title = newTitle; newLesson.owner = ev.owner; }
+
     await store.set(token, { intent: "change", chatId, eventId: ev.id, newLesson });
-    const t = parsed.confirmation || `לעדכן את "${ev.title}" ל-${newLesson.date} ${newLesson.startTime}?`;
+    const t = parsed.confirmation ||
+      (newTitle
+        ? `לעדכן את "${ev.title}" לשם "${newTitle}", ל-${newLesson.date} ${newLesson.startTime}?`
+        : `לעדכן את "${ev.title}" ל-${newLesson.date} ${newLesson.startTime}?`);
     await sendConfirm(chatId, t, { yesData: `y:${token}`, noData: `n:${token}` });
   }
 }

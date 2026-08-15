@@ -49,7 +49,8 @@ const SCHEMA = {
       enum: ["amit", "nadav", "both", "unknown"],
       description: "Whose lesson, for add/change/delete. 'unknown' if not stated.",
     },
-    title: { type: "string", description: "Lesson title / keyword, e.g. 'שיעור גיטרה' or 'מנטלי'. Empty if N/A." },
+    title: { type: "string", description: "Lesson title / keyword used to FIND the lesson, e.g. 'שיעור גיטרה' or 'מנטלי'. Empty if N/A." },
+    newTitle: { type: "string", description: "For change only: a NEW name for the lesson, if the user wants to rename it (distinct from 'title', which only identifies which lesson they mean). Empty if not renaming." },
     taskTitle: { type: "string", description: "For task_add: the task text ('לארוז תיק אימון'). For task_done: a keyword to find the task. Empty if N/A." },
     date: { type: "string", description: "NEW event date YYYY-MM-DD (Asia/Jerusalem) — for add, and the new date for change. Empty if N/A." },
     startTime: { type: "string", description: "NEW start time HH:MM 24h — for add, and the new time for change. Empty if unchanged/N/A." },
@@ -61,7 +62,7 @@ const SCHEMA = {
       description: "For add/change/delete: one short Hebrew sentence asking the user to confirm the action. Empty otherwise.",
     },
   },
-  required: ["intent", "reply", "person", "title", "taskTitle", "date", "startTime", "durationMinutes", "findDate", "findTime", "confirmation"],
+  required: ["intent", "reply", "person", "title", "newTitle", "taskTitle", "date", "startTime", "durationMinutes", "findDate", "findTime", "confirmation"],
 };
 
 /**
@@ -83,7 +84,7 @@ export async function interpret(text, ctx) {
     "- אם זו שאלה על הלוח (למשל 'מה יש לי מחר?', 'מתי המבחן הבא של נדב?') — ענה/עני בעברית בשדה reply, קצר וברור, על סמך לוח הזמנים למעלה בלבד. אל תמציא אירועים.",
     "- אם מבקשים להוסיף/לשנות/למחוק שיעור — חלץ את הפרטים ונסח משפט אישור קצר בעברית בשדה confirmation. אל תכתוב reply.",
     "  • הוספה (add): title=שם השיעור, date/startTime/durationMinutes=פרטי השיעור החדש.",
-    "  • שינוי (change): title=מילת מפתח לזיהוי השיעור; findDate/findTime=התאריך והשעה הנוכחיים של השיעור (לזיהוי); date/startTime/durationMinutes=הערכים החדשים (השאר ריק מה שלא משתנה).",
+    "  • שינוי (change): title=מילת מפתח לזיהוי השיעור; findDate/findTime=התאריך והשעה הנוכחיים של השיעור (לזיהוי); date/startTime/durationMinutes=הערכים החדשים (השאר ריק מה שלא משתנה). אם מבקשים גם לשנות/לתקן את השם של השיעור עצמו (למשל 'תשני את השם ל...', 'תקראי לזה...') — מלא/י newTitle בשם החדש; אחרת השאר/י אותו ריק.",
     "  • מחיקה (delete): title=מילת מפתח לזיהוי; findDate/findTime=התאריך והשעה של השיעור למחיקה. השאר date/startTime ריקים.",
     "  • אם המשתמש מציין תאריך ושעה כדי לזהות שיעור קיים — תמיד מלא findDate ו-findTime.",
     "- לכל ילד יש רשימת משימות (צ'ק-ליסט פשוט, בלי תאריכים). ניהול משימות:",
