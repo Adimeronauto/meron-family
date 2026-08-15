@@ -16,6 +16,22 @@ export async function buildSchedule(auth, { fromMs = Date.now(), toMs = Date.now
   const timeMin = new Date(fromMs).toISOString();
   const timeMax = new Date(toMs).toISOString();
 
+  // Events hidden from the board (e.g. a wrong/irrelevant test from a read-only school calendar)
+  // are dropped right here, so every consumer — board, reminders, morning digest — is consistent.
+  // Dynamic import + a soft fallback to "nothing hidden": db.mjs throws if DATABASE_URL isn't
+  // set (true for local scripts like scripts/preview.mjs, which don't load .env), and a DB hiccup
+  // here shouldn't take the whole board down with it.
+  const hiddenIds = await (async () => {
+    try {
+      const { sql } = await import("./db.mjs");
+      const { NeonHiddenEventsStore } = await import("./hidden-events-store.mjs");
+      return await new NeonHiddenEventsStore(sql).listIds();
+    } catch (err) {
+      console.warn("hidden-events lookup skipped:", err.message);
+      return new Set();
+    }
+  })();
+
   const all = [];
 
   for (const cal of CALENDARS) {
@@ -33,6 +49,7 @@ export async function buildSchedule(auth, { fromMs = Date.now(), toMs = Date.now
 
       for (const event of data.items ?? []) {
         if (event.status === "cancelled") continue;
+        if (hiddenIds.has(event.id)) continue;
         const item = classifyEvent(cal, event);
         if (item) all.push(item);
       }

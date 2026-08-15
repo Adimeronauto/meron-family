@@ -145,6 +145,7 @@
   .excount .pill.p-tom{border:1px solid var(--ink); color:var(--ink)}
   .excount .near{font-size:14px; font-weight:700; color:var(--ink); white-space:nowrap}
   .excount .far{font-size:14px; font-weight:400; color:var(--muted); white-space:nowrap}
+  .exhide{flex:none; appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:16px; color:var(--faint); padding:0 2px; line-height:1}
 
   /* month nav + day popup */
   .mnav{display:flex; justify-content:space-between; align-items:center; padding:2px 20px 0}
@@ -322,7 +323,9 @@
           '<div class="wd">'+esc(F.wdLong.format(keyUTC(k).getTime()))+'</div></div>'+
         '<div class="exmid"><div class="typ">'+esc(e.examLabel)+esc(who)+'</div>'+
           '<div class="ttl">'+esc(e.title)+'</div></div>'+
-        '<div class="excount">'+countdownHTML(k)+'</div></div>';
+        '<div class="excount">'+countdownHTML(k)+'</div>'+
+        '<button class="exhide" data-hide-id="'+esc(e.id)+'" data-hide-title="'+esc(e.title)+'" aria-label="הסתר">✕</button>'+
+      '</div>';
     }).join("");
     return '<div class="stage"><div class="pad exlist">'+rows+'</div></div>';
   }
@@ -478,6 +481,10 @@
     });
     var dt=app.querySelector("[data-donetoggle]"); if(dt) dt.onclick=function(){ S.doneOpen=!S.doneOpen; render(); };
     var dc=app.querySelector("[data-doneclear]"); if(dc) dc.onclick=function(){ clearDone(); };
+
+    app.querySelectorAll("[data-hide-id]").forEach(function(b){
+      b.onclick=function(){ hideEvent(b.dataset.hideId, b.dataset.hideTitle); };
+    });
   }
 
   function post(method, payload){
@@ -519,6 +526,16 @@
     S.tasks.open=S.tasks.open.filter(function(t){return t.id!==id;});
     S.tasks.done=S.tasks.done.filter(function(t){return t.id!==id;});
     post("DELETE",{id:id,owner:t&&t.owner}); render();
+  }
+
+  async function hideEvent(id, title){
+    if (!confirm('להסתיר את "'+title+'"? הפעולה סופית ולא ניתנת לביטול.')) return;
+    S.events = S.events.filter(function(e){ return e.id!==id; });
+    render();
+    try{
+      await fetch("/api/hide-event?t="+encodeURIComponent(TOKEN),{
+        method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id:id})});
+    }catch(e){ /* worst case it reappears on next refresh; user can hide again */ }
   }
 
   function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
