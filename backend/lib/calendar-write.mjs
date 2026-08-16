@@ -84,7 +84,7 @@ function pad(hhmm) {
 }
 
 /** Add minutes to a naive wall-clock time and return "YYYY-MM-DDTHH:MM:00". */
-export function addMinutesWall(date, startTime, minutes) {
+function addMinutesWall(date, startTime, minutes) {
   // Treat as UTC purely for arithmetic — we only need the resulting wall-clock digits.
   const base = new Date(`${date}T${pad(startTime)}:00Z`);
   const end = new Date(base.getTime() + minutes * 60_000);
