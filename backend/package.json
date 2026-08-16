@@ -13,7 +13,10 @@
     "telegram:whoami": "node scripts/telegram-whoami.mjs",
     "bot": "node scripts/bot.mjs",
     "webhook": "node scripts/set-webhook.mjs",
-    "morning:all": "node scripts/send-morning-all.mjs"
+    "morning:all": "node scripts/send-morning-all.mjs",
+    "personal:whoami": "node scripts/personal-whoami.mjs",
+    "bot:personal": "node scripts/personal-bot.mjs",
+    "webhook:personal": "node scripts/personal-set-webhook.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.0",
