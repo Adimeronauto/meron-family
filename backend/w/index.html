@@ -155,6 +155,7 @@
   .mnav{display:flex; justify-content:space-between; align-items:center; padding:2px 20px 0}
   .mnav button{appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:40px; font-weight:700; line-height:1; color:var(--ink); padding:8px 22px; border-radius:14px}
   .mnav button:active{background:var(--fill)}
+  .mnav .today{font-size:14px; font-weight:600; padding:8px 16px; border:1px solid var(--hair)}
   .backdrop{position:absolute; inset:0; background:rgba(0,0,0,.28); z-index:4; animation:fade .2s}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   .sheet.popup{top:auto; max-height:74%; border-radius:28px 28px 0 0; box-shadow:0 -8px 24px rgba(0,0,0,.12); animation:slideup .28s cubic-bezier(.2,.7,.2,1)}
@@ -389,6 +390,7 @@
   function weekView(){
     var start=weekStart(S.weekSel);
     var nav='<div class="mnav"><button data-wprev aria-label="השבוע הקודם">‹</button>'+
+            '<button class="today" data-wtoday>היום</button>'+
             '<button data-wnext aria-label="השבוע הבא">›</button></div>';
     var strip='<div class="strip">';
     for (var i=0;i<7;i++){
@@ -410,6 +412,7 @@
     var y=+first.slice(0,4), m=+first.slice(5,7);
     var dim = new Date(Date.UTC(y, m, 0)).getUTCDate(); // days in month
     var nav='<div class="mnav"><button data-mprev aria-label="חודש קודם">‹</button>'+
+            '<button class="today" data-mtoday>היום</button>'+
             '<button data-mnext aria-label="חודש הבא">›</button></div>';
     var g='<div class="mgrid">';
     for (var w=0;w<7;w++) g+='<div class="wl">'+HE_LETTERS[w]+'</div>';
@@ -488,7 +491,7 @@
   /* ---------- events ---------- */
   function wire(){
     app.querySelectorAll(".nav button").forEach(function(b){
-      b.onclick=function(){ S.view=b.dataset.view; if(S.view!=="day") S.sheet="collapsed"; S.monthSheet=null; if(S.view==="month") S.monthYM=todayKey().slice(0,7); render(); };
+      b.onclick=function(){ S.view=b.dataset.view; if(S.view!=="day") S.sheet="collapsed"; S.monthSheet=null; if(S.view==="month") S.monthYM=todayKey().slice(0,7); if(S.view==="week") S.weekSel=todayKey(); render(); };
     });
     app.querySelectorAll(".strip .d").forEach(function(b){
       b.onclick=function(){ S.weekSel=b.dataset.day; render(); };
@@ -498,8 +501,10 @@
     });
     var mp=app.querySelector("[data-mprev]"); if(mp) mp.onclick=function(){ shiftMonth(-1); };
     var mn=app.querySelector("[data-mnext]"); if(mn) mn.onclick=function(){ shiftMonth(1); };
+    var mt=app.querySelector("[data-mtoday]"); if(mt) mt.onclick=function(){ S.monthYM=todayKey().slice(0,7); S.monthSheet=null; render(); };
     var wp=app.querySelector("[data-wprev]"); if(wp) wp.onclick=function(){ shiftWeek(-1); };
     var wn=app.querySelector("[data-wnext]"); if(wn) wn.onclick=function(){ shiftWeek(1); };
+    var wt=app.querySelector("[data-wtoday]"); if(wt) wt.onclick=function(){ S.weekSel=todayKey(); render(); };
 
     var tog=app.querySelector("[data-sheet-toggle]");
     if (tog) tog.onclick=function(){ S.sheet = S.sheet==="expanded"?"collapsed":"expanded"; render(); };
