@@ -29,6 +29,7 @@ export default async function handler(req, res) {
     const events = list.map((i) => ({
       id: i.id,
       title: i.title,
+      location: i.location,
       owner: i.owner,
       startMs: i.startMs,
       endMs: i.endMs,

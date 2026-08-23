@@ -109,11 +109,19 @@ export function cleanTitle(title) {
   t = t.replace(/\b(amit|nadav|family)\b/gi, " ");
   t = t.replace(/עמית|נדב|משפחה/g, " ");
 
-  // Embedded times and ranges: "1700", "18:30", "18 עד 19:30", "עד", "1830 עד 2030".
+  // Embedded times and ranges: "1700", "18:30", "18 עד 19:30", "עד", "1830 עד 2030". A bare 1-2
+  // digit number is only ever a leftover time when it sits directly against "עד" — anywhere else
+  // in the title it's real content (e.g. "מתכונת 2 במתמטיקה", a class/round number) and must be
+  // kept, so there is no longer a blanket "strip any lone number" pass.
+  // \b never matches around Hebrew letters in JS (they aren't \w) — every pattern below keeps
+  // its \b strictly on the digit side and uses (^|\s)/(?=\s|$) on the "עד" side instead, same as
+  // the original bare-עד line already had to (see its own comment).
   t = t.replace(/\b\d{1,2}:\d{2}\b/g, " "); // 18:30
   t = t.replace(/\b\d{3,4}\b/g, " "); // 1700, 1830
-  t = t.replace(/(^|\s)עד(?=\s|$)/g, " "); // Hebrew-safe boundary; \b would not match here
-  t = t.replace(/\b\d{1,2}\b/g, " "); // stray lone hours
+  t = t.replace(/\b\d{1,2}\s+עד\s+\d{1,2}\b/g, " "); // "18 עד 19" — both bare numbers, one range
+  t = t.replace(/\b\d{1,2}\s+עד(?=\s|$)/g, " "); // "18 עד ..." — leading bare number only
+  t = t.replace(/(^|\s)עד\s+\d{1,2}\b/g, " "); // "... עד 19" — trailing bare number only
+  t = t.replace(/(^|\s)עד(?=\s|$)/g, " "); // any leftover bare "עד", e.g. once "19:30" is already gone
 
   // Leftover separators and whitespace.
   t = t.replace(/^[\s:\-–,]+|[\s:\-–,]+$/g, "").replace(/\s{2,}/g, " ").trim();
@@ -147,6 +155,7 @@ export function classifyEvent(calendar, event) {
     owner, // "amit" | "nadav" | "both"
     title: cleanTitle(rawTitle),
     rawTitle,
+    location: event.location || null,
     startMs,
     endMs, // null for all-day; used to show a start–end range
     allDay: Boolean(event.start?.date && !event.start?.dateTime),

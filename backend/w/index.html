@@ -36,10 +36,11 @@
   .eyebrow{font-size:22px; font-weight:800; color:var(--ink); letter-spacing:-0.2px; margin-bottom:7px}
   .h1{font-size:40px; font-weight:800; letter-spacing:-0.5px; line-height:1; text-wrap:balance}
   .sub{font-size:15px; font-weight:400; color:var(--muted); margin-top:6px}
-  .nav{display:flex; gap:18px; margin-top:22px}
+  .nav{display:flex; gap:16px; margin-top:22px; overflow-x:auto; -webkit-overflow-scrolling:touch}
   .nav button{
     appearance:none; background:none; border:0; padding:0 0 6px; cursor:pointer; font-family:inherit;
     font-size:16px; font-weight:400; color:var(--muted); border-bottom:2px solid transparent;
+    flex:none; white-space:nowrap;
   }
   .nav button[aria-current="true"]{font-weight:700; color:var(--ink); border-bottom-color:var(--ink)}
 
@@ -56,6 +57,7 @@
   .ev .t{font-size:17px; font-weight:700; width:54px; flex:none}
   .ev .body{flex:1; min-width:0}
   .ev .ttl{font-size:16px; font-weight:400; line-height:1.35}
+  .ev .loc{margin-top:4px; font-size:13px; color:var(--muted)}
   .ev .tags{margin-top:5px; display:flex; gap:7px; flex-wrap:wrap}
   .tag{font-size:11px; font-weight:600; color:var(--muted); border:1px solid var(--hair); border-radius:999px; padding:2px 9px}
   .tag.test{color:var(--ink); border-color:var(--ink); font-weight:700}
@@ -121,6 +123,8 @@
   .addrow2 .plus{flex:none; font-size:24px; color:var(--muted); width:23px; text-align:center; line-height:1}
   .addrow2 input{flex:1; border:0; outline:0; background:none; font-family:inherit; font-size:17px; color:var(--ink); text-align:right}
   .addrow2 input::placeholder{color:var(--faint)}
+  .searchbox{width:100%; border:1px solid var(--hair); border-radius:14px; padding:12px 16px; font-family:inherit; font-size:16px; color:var(--ink); background:var(--fill)}
+  .searchbox::placeholder{color:var(--faint)}
   .donehdr{display:flex; align-items:center; justify-content:space-between; padding:18px 0 6px}
   .donehdr .lft{display:flex; align-items:center; gap:12px; appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:15px; font-weight:600; color:var(--muted)}
   .donehdr .chev{font-size:11px; width:12px; text-align:center}
@@ -149,7 +153,7 @@
 
   /* month nav + day popup */
   .mnav{display:flex; justify-content:space-between; align-items:center; padding:2px 20px 0}
-  .mnav button{appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:28px; line-height:1; color:var(--ink); padding:4px 14px; border-radius:10px}
+  .mnav button{appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:40px; font-weight:700; line-height:1; color:var(--ink); padding:8px 22px; border-radius:14px}
   .mnav button:active{background:var(--fill)}
   .backdrop{position:absolute; inset:0; background:rgba(0,0,0,.28); z-index:4; animation:fade .2s}
   @keyframes fade{from{opacity:0}to{opacity:1}}
@@ -177,7 +181,7 @@
 
   var app = document.getElementById("app");
   var S = { view:"day", weekSel:null, monthSheet:null, sheet:"collapsed", monthYM:null, doneOpen:true,
-            kid:null, name:"", tz:"Asia/Jerusalem", nowMs:Date.now(), events:[], tasks:{open:[],done:[]} };
+            search:"", kid:null, name:"", tz:"Asia/Jerusalem", nowMs:Date.now(), events:[], tasks:{open:[],done:[]} };
   function normTasks(t){ t=t||{}; return { open:t.open||[], done:t.done||[] }; }
   var F = {}; // Intl formatters, built once tz is known
 
@@ -272,6 +276,7 @@
     if (S.view==="day"){ title="היום"; sub=subtitleFor(todayKey()); }
     else if (S.view==="week"){ title="השבוע"; sub=weekRange(); }
     else if (S.view==="month"){ title=monthLabel(S.monthYM); sub=""; }
+    else if (S.view==="search"){ title="חיפוש"; sub=""; }
     else { title="מבחנים ומטלות"; sub=""; }
 
     var html = '<div class="hdr">'+
@@ -279,16 +284,27 @@
       '<div class="h1">'+esc(title)+'</div>'+
       (sub?'<div class="sub">'+esc(sub)+'</div>':'')+
       '<div class="nav">'+
-        navBtn("day","היום")+navBtn("week","שבוע")+navBtn("month","חודש")+navBtn("tests","מבחנים")+
+        navBtn("day","היום")+navBtn("week","שבוע")+navBtn("month","חודש")+navBtn("tests","מבחנים")+navBtn("search","חיפוש")+
       '</div></div>';
 
     if (S.view==="day") html += dayView();
     else if (S.view==="week") html += weekView();
     else if (S.view==="month") html += monthView();
+    else if (S.view==="search") html += searchView();
     else html += testsView();
+
+    // Re-rendering replaces the whole DOM, which would normally drop focus out of the search
+    // box on every keystroke — restore it (and the caret position) when that's where it was.
+    var reFocus = document.activeElement && document.activeElement.id==="searchInput";
+    var caret = reFocus ? document.activeElement.selectionStart : null;
 
     app.innerHTML = html;
     wire();
+
+    if (reFocus) {
+      var si = app.querySelector("#searchInput");
+      if (si) { si.focus(); if (caret!=null) si.setSelectionRange(caret, caret); }
+    }
   }
   function navBtn(v,label){
     return '<button data-view="'+v+'" aria-current="'+(S.view===v)+'">'+label+'</button>';
@@ -298,6 +314,7 @@
     return '<div class="ev'+(e.allDay?' allday':'')+'">'+
       '<div class="t">'+(e.allDay?'כל היום':'<span class="time">'+esc(timeStr(e))+'</span>')+'</div>'+
       '<div class="body"><div class="ttl">'+esc(e.title)+'</div>'+
+        (e.location?'<div class="loc">📍 '+esc(e.location)+'</div>':'')+
         (ownerTag(e)?'<div class="tags">'+ownerTag(e)+'</div>':'')+
       '</div></div>';
   }
@@ -330,6 +347,28 @@
     return '<div class="stage"><div class="pad exlist">'+rows+'</div></div>';
   }
 
+  function searchRow(e){
+    var k=dayKey(e.startMs);
+    return '<div class="ev'+(e.allDay?' allday':'')+'">'+
+      '<div class="t"><span class="time">'+shortDate(k)+'</span></div>'+
+      '<div class="body"><div class="ttl">'+esc(e.title)+'</div>'+
+        (e.location?'<div class="loc">📍 '+esc(e.location)+'</div>':'')+
+        '<div class="tags"><span class="tag">'+esc(timeStr(e))+'</span>'+ownerTag(e)+'</div>'+
+      '</div></div>';
+  }
+  function searchView(){
+    var box='<div class="pad"><input id="searchInput" class="searchbox" type="text" '+
+      'placeholder="חיפוש לפי שם אירוע" value="'+esc(S.search||"")+'"></div>';
+    var q=(S.search||"").trim();
+    if (!q) return '<div class="stage">'+box+'<div class="empty">הקלידו כדי לחפש אירוע</div></div>';
+    var qlc=q.toLowerCase();
+    var matches=S.events.filter(function(e){ return (e.title||"").toLowerCase().indexOf(qlc)!==-1; })
+      .sort(function(a,b){ return a.startMs-b.startMs; });
+    var body = matches.length ? '<div class="pad">'+matches.map(searchRow).join("")+'</div>'
+                              : '<div class="empty">לא נמצאו אירועים</div>';
+    return '<div class="stage">'+box+body+'</div>';
+  }
+
   function dayView(){
     var evs = eventsOn(todayKey());
     var list = evs.length ? '<div class="pad">'+evs.map(evCard).join("")+'</div>'
@@ -349,8 +388,8 @@
   }
   function weekView(){
     var start=weekStart(S.weekSel);
-    var nav='<div class="mnav"><button data-wprev aria-label="השבוע הקודם">›</button>'+
-            '<button data-wnext aria-label="השבוע הבא">‹</button></div>';
+    var nav='<div class="mnav"><button data-wprev aria-label="השבוע הקודם">‹</button>'+
+            '<button data-wnext aria-label="השבוע הבא">›</button></div>';
     var strip='<div class="strip">';
     for (var i=0;i<7;i++){
       var k=addDays(start,i), has=eventsOn(k).length>0;
@@ -370,8 +409,8 @@
     var lead = wd(first);
     var y=+first.slice(0,4), m=+first.slice(5,7);
     var dim = new Date(Date.UTC(y, m, 0)).getUTCDate(); // days in month
-    var nav='<div class="mnav"><button data-mprev aria-label="חודש קודם">›</button>'+
-            '<button data-mnext aria-label="חודש הבא">‹</button></div>';
+    var nav='<div class="mnav"><button data-mprev aria-label="חודש קודם">‹</button>'+
+            '<button data-mnext aria-label="חודש הבא">›</button></div>';
     var g='<div class="mgrid">';
     for (var w=0;w<7;w++) g+='<div class="wl">'+HE_LETTERS[w]+'</div>';
     for (var b=0;b<lead;b++) g+='<div></div>';
@@ -473,6 +512,9 @@
         if (e.key==="Enter"){ e.preventDefault(); addTask(input.value, input.dataset.owner, input.id); }
       });
     });
+
+    var search=app.querySelector("#searchInput");
+    if (search) search.addEventListener("input", function(){ S.search=search.value; render(); });
     app.querySelectorAll(".krow [data-act]").forEach(function(b){
       b.onclick=function(){
         var id=b.closest(".krow").dataset.id, act=b.dataset.act;
