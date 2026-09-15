@@ -85,7 +85,7 @@
   .cell .mdot{position:absolute; bottom:-9px; width:4px; height:4px; border-radius:50%; background:var(--ink)}
   .cell[aria-pressed="true"]:not(.today){outline:1.5px solid var(--ink); outline-offset:1px}
 
-  /* bottom sheet */
+  /* bottom sheet (day-detail popup in month view) */
   .sheet{
     position:absolute; left:0; right:0; bottom:0; background:var(--bg);
     border-top:1px solid var(--hair); border-radius:24px 24px 0 0;
@@ -94,17 +94,10 @@
     transition:transform .28s cubic-bezier(.2,.7,.2,1); z-index:5;
     display:flex; flex-direction:column;
   }
-  .sheet.expanded{
-    top:112px; border-radius:28px 28px 0 0; box-shadow:0 -8px 24px rgba(0,0,0,.08);
-    padding:12px 22px calc(28px + env(safe-area-inset-bottom));
-  }
   .grip{width:36px; height:4px; background:rgba(0,0,0,.15); border-radius:2px; margin:0 auto 12px; flex:none}
-  .sheet-head{display:flex; align-items:center; justify-content:space-between; cursor:pointer; flex:none}
+  .sheet-head{display:flex; align-items:center; justify-content:space-between; flex:none}
   .sheet-head .lbl{font-size:16px; font-weight:600}
-  .sheet.expanded .sheet-head .lbl{font-size:20px; font-weight:700}
-  .sheet-head .cnt{font-size:14px; color:var(--muted)}
   .sheet-body{margin-top:16px; overflow-y:auto; flex:1; display:none}
-  .sheet.expanded .sheet-body{display:block}
 
   /* add row */
   .addrow{display:flex; align-items:center; gap:10px; padding:8px 0 14px; border-bottom:1px solid var(--hair2)}
@@ -182,7 +175,7 @@
   var TOKEN = urlTok || (function(){ try { return localStorage.getItem("board_token"); } catch(e){ return null; } })();
 
   var app = document.getElementById("app");
-  var S = { view:"day", weekSel:null, monthSheet:null, sheet:"collapsed", monthYM:null, doneOpen:true,
+  var S = { view:"day", weekSel:null, monthSheet:null, monthYM:null, doneOpen:true,
             kid:null, name:"", tz:"Asia/Jerusalem", nowMs:Date.now(), events:[], tasks:{open:[],done:[]} };
   function normTasks(t){ t=t||{}; return { open:t.open||[], done:t.done||[] }; }
   var F = {}; // Intl formatters, built once tz is known
@@ -285,20 +278,22 @@
     if (S.view==="day"){ title="היום"; sub=subtitleFor(todayKey()); }
     else if (S.view==="week"){ title="השבוע"; sub=weekRange(); }
     else if (S.view==="month"){ title=monthLabel(S.monthYM); sub=""; }
-    else { title="מבחנים ומטלות"; sub=""; }
+    else if (S.view==="tests"){ title="מבחנים ומטלות"; sub=""; }
+    else { title="משימות"; sub=""; }
 
     var html = '<div class="hdr">'+
       '<div class="eyebrow">'+esc(S.name)+'</div>'+
       '<div class="h1">'+esc(title)+'</div>'+
       (sub?'<div class="sub">'+esc(sub)+'</div>':'')+
       '<div class="nav">'+
-        navBtn("day","היום")+navBtn("week","שבוע")+navBtn("month","חודש")+navBtn("tests","מבחנים")+
+        navBtn("day","היום")+navBtn("week","שבוע")+navBtn("month","חודש")+navBtn("tests","מבחנים")+navBtn("tasks","משימות")+
       '</div></div>';
 
     if (S.view==="day") html += dayView();
     else if (S.view==="week") html += weekView();
     else if (S.view==="month") html += monthView();
-    else html += testsView();
+    else if (S.view==="tests") html += testsView();
+    else html += tasksView();
 
     app.innerHTML = html;
     wire();
@@ -352,7 +347,7 @@
     var evs = eventsOn(todayKey());
     var list = evs.length ? '<div class="pad">'+evs.map(evCard).join("")+'</div>'
                           : '<div class="empty">אין אירועים היום</div>';
-    return '<div class="stage">'+list+'</div>'+sheet();
+    return '<div class="stage">'+list+'</div>';
   }
 
   function weekRange(){
@@ -404,15 +399,9 @@
     return '<div class="stage">'+nav+g+'</div>'+ (S.monthSheet?monthSheet():"");
   }
 
-  /* ---------- tasks sheet ---------- */
-  function openTaskCount(){ return (S.tasks.open||[]).length; }
-  function sheet(){
-    var expanded=S.sheet==="expanded";
-    var head='<div class="grip"></div><div class="sheet-head" data-sheet-toggle>'+
-      '<span class="lbl">משימות</span>'+
-      (expanded?'<button class="back" data-sheet-collapse>‹ חזרה ללוח</button>':'<span class="cnt">'+openTaskCount()+' היום</span>')+'</div>';
-    var body = expanded ? '<div class="sheet-body">'+taskList()+'</div>' : '';
-    return '<div class="sheet'+(expanded?' expanded':'')+'">'+head+body+'</div>';
+  /* ---------- tasks ---------- */
+  function tasksView(){
+    return '<div class="stage"><div class="pad">'+taskList()+'</div></div>';
   }
   function taskList(){
     if (S.kid==="both") return bothTaskList();
@@ -467,7 +456,7 @@
   /* ---------- events ---------- */
   function wire(){
     app.querySelectorAll(".nav button").forEach(function(b){
-      b.onclick=function(){ S.view=b.dataset.view; if(S.view!=="day") S.sheet="collapsed"; S.monthSheet=null; if(S.view==="month") S.monthYM=todayKey().slice(0,7); render(); };
+      b.onclick=function(){ S.view=b.dataset.view; S.monthSheet=null; if(S.view==="month") S.monthYM=todayKey().slice(0,7); render(); };
     });
     app.querySelectorAll(".strip .d").forEach(function(b){
       b.onclick=function(){ S.weekSel=b.dataset.day; render(); };
@@ -480,10 +469,6 @@
     var wp=app.querySelector("[data-wprev]"); if(wp) wp.onclick=function(){ shiftWeek(-1); };
     var wn=app.querySelector("[data-wnext]"); if(wn) wn.onclick=function(){ shiftWeek(1); };
 
-    var tog=app.querySelector("[data-sheet-toggle]");
-    if (tog) tog.onclick=function(){ S.sheet = S.sheet==="expanded"?"collapsed":"expanded"; render(); };
-    var backBtn=app.querySelector("[data-sheet-collapse]");
-    if (backBtn) backBtn.onclick=function(e){ e.stopPropagation(); S.sheet="collapsed"; render(); };
     app.querySelectorAll("[data-sheet-close]").forEach(function(el){ el.onclick=function(){ S.monthSheet=null; render(); }; });
 
     app.querySelectorAll("[data-newtask]").forEach(function(input){
