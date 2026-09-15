@@ -57,6 +57,7 @@
   .ev .body{flex:1; min-width:0}
   .ev .ttl{font-size:16px; font-weight:400; line-height:1.35}
   .ev .tags{margin-top:5px; display:flex; gap:7px; flex-wrap:wrap}
+  .evhide{flex:none; align-self:center; appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:16px; color:var(--faint); padding:0 2px; line-height:1}
   .tag{font-size:11px; font-weight:600; color:var(--muted); border:1px solid var(--hair); border-radius:999px; padding:2px 9px}
   .tag.test{color:var(--ink); border-color:var(--ink); font-weight:700}
   .allday .t{font-size:13px; font-weight:600; color:var(--muted); width:54px}
@@ -295,11 +296,15 @@
   }
 
   function evCard(e){
+    // Removing an event is a parent action — same "both" gate as the owner tags below.
+    var hideBtn = S.kid==="both"
+      ? '<button class="evhide" data-hide-id="'+esc(e.id)+'" data-hide-title="'+esc(e.title)+'" aria-label="הסתר">✕</button>'
+      : '';
     return '<div class="ev'+(e.allDay?' allday':'')+'">'+
       '<div class="t">'+(e.allDay?'כל היום':'<span class="time">'+esc(timeStr(e))+'</span>')+'</div>'+
       '<div class="body"><div class="ttl">'+esc(e.title)+'</div>'+
         (ownerTag(e)?'<div class="tags">'+ownerTag(e)+'</div>':'')+
-      '</div></div>';
+      '</div>'+hideBtn+'</div>';
   }
 
   function countdownHTML(k){
