@@ -112,8 +112,13 @@ export function cleanTitle(title) {
   // Embedded times and ranges: "1700", "18:30", "18 עד 19:30", "עד", "1830 עד 2030".
   t = t.replace(/\b\d{1,2}:\d{2}\b/g, " "); // 18:30
   t = t.replace(/\b\d{3,4}\b/g, " "); // 1700, 1830
+  // A bare 1-2 digit number is only ever a leftover time when it sits directly against "עד" (the
+  // range word) — e.g. the "18" in "18 עד 19:30". Anywhere else a number is real content (a class/
+  // room/group id like "מכון 1"), so it must be left alone — a previous blanket \b\d{1,2}\b sweep
+  // here stripped those too, e.g. turning "מכון 1 בדיקה" into "מכון בדיקה".
+  t = t.replace(/\b\d{1,2}(?=\s*עד(?:\s|$))/g, ""); // "18 עד..." -> drop the 18
+  t = t.replace(/(עד\s*)\d{1,2}\b/g, "$1"); // "עד 19" (end hour with no colon) -> drop the 19
   t = t.replace(/(^|\s)עד(?=\s|$)/g, " "); // Hebrew-safe boundary; \b would not match here
-  t = t.replace(/\b\d{1,2}\b/g, " "); // stray lone hours
 
   // Leftover separators and whitespace.
   t = t.replace(/^[\s:\-–,]+|[\s:\-–,]+$/g, "").replace(/\s{2,}/g, " ").trim();
