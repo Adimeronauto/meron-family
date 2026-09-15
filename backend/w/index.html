@@ -20,6 +20,7 @@
     --ink:#1c1c1e; --muted:#8e8e93; --faint:#c7c7cc;
     --hair:rgba(0,0,0,.1); --hair2:rgba(0,0,0,.08); --hair3:rgba(0,0,0,.04);
     --bg:#ffffff; --fill:#f7f7f7;
+    --amit-bg:#eef3f8; --nadav-bg:#f8f2e7;
     --font:'Assistant','Segoe UI',system-ui,-apple-system,'SF Hebrew',Arial,sans-serif;
   }
   *{box-sizing:border-box}
@@ -53,6 +54,8 @@
     display:flex; align-items:baseline; gap:16px;
   }
   .ev + .ev{margin-top:28px}
+  .ev.owner-amit{background:var(--amit-bg)}
+  .ev.owner-nadav{background:var(--nadav-bg)}
   .ev .t{font-size:17px; font-weight:700; width:54px; flex:none}
   .ev .body{flex:1; min-width:0}
   .ev .ttl{font-size:16px; font-weight:400; line-height:1.35}
@@ -133,6 +136,8 @@
   /* tests & homework list */
   .exlist{display:flex; flex-direction:column; gap:14px}
   .exrow{display:flex; align-items:center; gap:16px; border:1px solid var(--hair); border-radius:18px; padding:16px 18px}
+  .exrow.owner-amit{background:var(--amit-bg)}
+  .exrow.owner-nadav{background:var(--nadav-bg)}
   .exrow.today{border:1.5px solid var(--ink); background:#fafafa}
   .exdate{flex:none; width:58px; text-align:center}
   .exdate .d{font-size:17px; font-weight:700}
@@ -266,6 +271,13 @@
     }
     return "";
   }
+  // Subtle per-kid background tint, parent view only — a shared ("both"-owned) event stays neutral.
+  function ownerClass(e){
+    if (S.kid!=="both") return "";
+    if (e.owner==="amit") return " owner-amit";
+    if (e.owner==="nadav") return " owner-nadav";
+    return "";
+  }
 
   /* ---------- render ---------- */
   function render(){
@@ -296,11 +308,12 @@
   }
 
   function evCard(e){
-    // Removing an event is a parent action — same "both" gate as the owner tags below.
+    // Removing an event, and the owner tint, are both parent-view-only — same "both" gate as the owner tags below.
     var hideBtn = S.kid==="both"
       ? '<button class="evhide" data-hide-id="'+esc(e.id)+'" data-hide-title="'+esc(e.title)+'" aria-label="הסתר">✕</button>'
       : '';
-    return '<div class="ev'+(e.allDay?' allday':'')+'">'+
+    var ownerCls = ownerClass(e);
+    return '<div class="ev'+(e.allDay?' allday':'')+ownerCls+'">'+
       '<div class="t">'+(e.allDay?'כל היום':'<span class="time">'+esc(timeStr(e))+'</span>')+'</div>'+
       '<div class="body"><div class="ttl">'+esc(e.title)+'</div>'+
         (ownerTag(e)?'<div class="tags">'+ownerTag(e)+'</div>':'')+
@@ -323,7 +336,7 @@
     var rows = items.map(function(e){
       var k=dayKey(e.startMs), n=daysBetween(today,k);
       var who = (S.kid==="both" && (e.owner==="amit"||e.owner==="nadav")) ? ' · '+(e.owner==="amit"?"עמית":"נדב") : '';
-      return '<div class="exrow'+(n<=0?" today":"")+'">'+
+      return '<div class="exrow'+(n<=0?" today":"")+ownerClass(e)+'">'+
         '<div class="exdate"><div class="d time">'+shortDate(k)+'</div>'+
           '<div class="wd">'+esc(F.wdLong.format(keyUTC(k).getTime()))+'</div></div>'+
         '<div class="exmid"><div class="typ">'+esc(e.examLabel)+esc(who)+'</div>'+
