@@ -153,9 +153,9 @@
 
   /* month nav + day popup */
   .mnav{display:flex; justify-content:space-between; align-items:center; padding:2px 20px 0}
-  .mnav button{appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:40px; font-weight:700; line-height:1; color:var(--ink); padding:8px 22px; border-radius:14px}
-  .mnav button:active{background:var(--fill)}
-  .mnav .today{font-size:14px; font-weight:600; padding:8px 16px; border:1px solid var(--hair)}
+  .mnav button{appearance:none; background:var(--fill); border:0; cursor:pointer; font-family:inherit; font-size:15px; font-weight:700; line-height:1; color:var(--ink); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center}
+  .mnav button:active{background:var(--hair2)}
+  .mnav .today{font-size:14px; font-weight:600; width:auto; height:auto; padding:8px 16px; border:1px solid var(--hair); background:none; border-radius:14px}
   .backdrop{position:absolute; inset:0; background:rgba(0,0,0,.28); z-index:4; animation:fade .2s}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   .sheet.popup{top:auto; max-height:74%; border-radius:28px 28px 0 0; box-shadow:0 -8px 24px rgba(0,0,0,.12); animation:slideup .28s cubic-bezier(.2,.7,.2,1)}
@@ -414,9 +414,9 @@
   }
   function weekView(){
     var start=weekStart(S.weekSel);
-    var nav='<div class="mnav"><button data-wprev aria-label="השבוע הקודם">‹</button>'+
+    var nav='<div class="mnav"><button data-wprev aria-label="השבוע הקודם">▶</button>'+
             '<button class="today" data-wtoday>היום</button>'+
-            '<button data-wnext aria-label="השבוע הבא">›</button></div>';
+            '<button data-wnext aria-label="השבוע הבא">◀</button></div>';
     var strip='<div class="strip">';
     for (var i=0;i<7;i++){
       var k=addDays(start,i), has=eventsOn(k).length>0;
@@ -436,9 +436,9 @@
     var lead = wd(first);
     var y=+first.slice(0,4), m=+first.slice(5,7);
     var dim = new Date(Date.UTC(y, m, 0)).getUTCDate(); // days in month
-    var nav='<div class="mnav"><button data-mprev aria-label="חודש קודם">‹</button>'+
+    var nav='<div class="mnav"><button data-mprev aria-label="חודש קודם">▶</button>'+
             '<button class="today" data-mtoday>היום</button>'+
-            '<button data-mnext aria-label="חודש הבא">›</button></div>';
+            '<button data-mnext aria-label="חודש הבא">◀</button></div>';
     var g='<div class="mgrid">';
     for (var w=0;w<7;w++) g+='<div class="wl">'+HE_LETTERS[w]+'</div>';
     for (var b=0;b<lead;b++) g+='<div></div>';

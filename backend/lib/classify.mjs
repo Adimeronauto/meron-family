@@ -9,6 +9,7 @@ import {
   HOMEWORK_KEYWORDS,
   SUBMISSION_KEYWORDS,
   EXCLUDE_TITLE_KEYWORDS,
+  AMIT_CLASS_NUMBER,
   NO_REMINDER_MARKER,
   TIMEZONE,
 } from "../config/rules.mjs";
@@ -20,10 +21,44 @@ const EXCLUDE_RE = EXCLUDE_TITLE_KEYWORDS.map(
   (kw) => new RegExp(`(^|[^${HEB}])${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^${HEB}])`)
 );
 
+// A grade-י (10th grade) class reference: "י10" (one class), or "י3-י9" (a range, second "י"
+// optional). Global, and reset via lastIndex before each use since it's shared/stateful.
+const CLASS_TOKEN_RE = new RegExp(`(?:^|[^${HEB}])י(\\d{1,2})(?:\\s*-\\s*י?(\\d{1,2}))?`, "g");
+
+/** Every class number a school title names for grade י, expanding any ranges. Empty = none named. */
+function classNumbersInTitle(title) {
+  const text = title ?? "";
+  const nums = new Set();
+  CLASS_TOKEN_RE.lastIndex = 0;
+  let m;
+  while ((m = CLASS_TOKEN_RE.exec(text))) {
+    const a = Number(m[1]);
+    if (m[2] == null) {
+      nums.add(a);
+      continue;
+    }
+    const b = Number(m[2]);
+    const [lo, hi] = a <= b ? [a, b] : [b, a];
+    for (let n = lo; n <= hi; n++) nums.add(n);
+  }
+  return nums;
+}
+
+/**
+ * True if a school title explicitly scopes itself to grade-י classes that do NOT include Amit's
+ * own class — e.g. "...בוחן יומן קריאה י10" excludes him (he's in י5); "...(י3-י9, י11-י14)"
+ * includes him. A title naming no classes at all is never excluded by this rule — it only kicks
+ * in once a title is class-specific.
+ */
+export function excludedByClass(title) {
+  const nums = classNumbersInTitle(title);
+  return nums.size > 0 && !nums.has(AMIT_CLASS_NUMBER);
+}
+
 /** True if a (school-calendar) title belongs to another grade/class and should be dropped. */
 export function excludeByTitle(title) {
   const t = title ?? "";
-  return EXCLUDE_RE.some((re) => re.test(t));
+  return EXCLUDE_RE.some((re) => re.test(t)) || excludedByClass(t);
 }
 
 // Name detection for the personal calendar. Real titles are free-text with the name somewhere
