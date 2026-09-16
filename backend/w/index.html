@@ -20,6 +20,7 @@
     --ink:#1c1c1e; --muted:#8e8e93; --faint:#c7c7cc;
     --hair:rgba(0,0,0,.1); --hair2:rgba(0,0,0,.08); --hair3:rgba(0,0,0,.04);
     --bg:#ffffff; --fill:#f7f7f7;
+    --amit-bg:#eef3f8; --nadav-bg:#f8f2e7;
     --font:'Assistant','Segoe UI',system-ui,-apple-system,'SF Hebrew',Arial,sans-serif;
   }
   *{box-sizing:border-box}
@@ -54,11 +55,15 @@
     display:flex; align-items:baseline; gap:16px;
   }
   .ev + .ev{margin-top:28px}
-  .ev .t{font-size:17px; font-weight:700; width:54px; flex:none}
+  .ev.owner-amit{background:var(--amit-bg)}
+  .ev.owner-nadav{background:var(--nadav-bg)}
+  .ev .t{font-size:17px; font-weight:700; width:54px; flex:none; display:flex; flex-direction:column; gap:2px}
+  .ev .t .end-time{font-size:12px; font-weight:400; color:var(--muted)}
   .ev .body{flex:1; min-width:0}
   .ev .ttl{font-size:16px; font-weight:400; line-height:1.35}
   .ev .loc{margin-top:4px; font-size:13px; color:var(--muted)}
   .ev .tags{margin-top:5px; display:flex; gap:7px; flex-wrap:wrap}
+  .evhide{flex:none; align-self:center; appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:16px; color:var(--faint); padding:0 2px; line-height:1}
   .tag{font-size:11px; font-weight:600; color:var(--muted); border:1px solid var(--hair); border-radius:999px; padding:2px 9px}
   .tag.test{color:var(--ink); border-color:var(--ink); font-weight:700}
   .allday .t{font-size:13px; font-weight:600; color:var(--muted); width:54px}
@@ -83,7 +88,7 @@
   .cell .mdot{position:absolute; bottom:-9px; width:4px; height:4px; border-radius:50%; background:var(--ink)}
   .cell[aria-pressed="true"]:not(.today){outline:1.5px solid var(--ink); outline-offset:1px}
 
-  /* bottom sheet */
+  /* bottom sheet (day-detail popup in month view) */
   .sheet{
     position:absolute; left:0; right:0; bottom:0; background:var(--bg);
     border-top:1px solid var(--hair); border-radius:24px 24px 0 0;
@@ -92,17 +97,10 @@
     transition:transform .28s cubic-bezier(.2,.7,.2,1); z-index:5;
     display:flex; flex-direction:column;
   }
-  .sheet.expanded{
-    top:112px; border-radius:28px 28px 0 0; box-shadow:0 -8px 24px rgba(0,0,0,.08);
-    padding:12px 22px calc(28px + env(safe-area-inset-bottom));
-  }
   .grip{width:36px; height:4px; background:rgba(0,0,0,.15); border-radius:2px; margin:0 auto 12px; flex:none}
-  .sheet-head{display:flex; align-items:center; justify-content:space-between; cursor:pointer; flex:none}
+  .sheet-head{display:flex; align-items:center; justify-content:space-between; flex:none}
   .sheet-head .lbl{font-size:16px; font-weight:600}
-  .sheet.expanded .sheet-head .lbl{font-size:20px; font-weight:700}
-  .sheet-head .cnt{font-size:14px; color:var(--muted)}
   .sheet-body{margin-top:16px; overflow-y:auto; flex:1; display:none}
-  .sheet.expanded .sheet-body{display:block}
 
   /* add row */
   .addrow{display:flex; align-items:center; gap:10px; padding:8px 0 14px; border-bottom:1px solid var(--hair2)}
@@ -136,6 +134,8 @@
   /* tests & homework list */
   .exlist{display:flex; flex-direction:column; gap:14px}
   .exrow{display:flex; align-items:center; gap:16px; border:1px solid var(--hair); border-radius:18px; padding:16px 18px}
+  .exrow.owner-amit{background:var(--amit-bg)}
+  .exrow.owner-nadav{background:var(--nadav-bg)}
   .exrow.today{border:1.5px solid var(--ink); background:#fafafa}
   .exdate{flex:none; width:58px; text-align:center}
   .exdate .d{font-size:17px; font-weight:700}
@@ -181,7 +181,7 @@
   var TOKEN = urlTok || (function(){ try { return localStorage.getItem("board_token"); } catch(e){ return null; } })();
 
   var app = document.getElementById("app");
-  var S = { view:"day", weekSel:null, monthSheet:null, sheet:"collapsed", monthYM:null, doneOpen:true,
+  var S = { view:"day", weekSel:null, monthSheet:null, monthYM:null, doneOpen:true,
             search:"", kid:null, name:"", tz:"Asia/Jerusalem", nowMs:Date.now(), events:[], tasks:{open:[],done:[]} };
   function normTasks(t){ t=t||{}; return { open:t.open||[], done:t.done||[] }; }
   var F = {}; // Intl formatters, built once tz is known
@@ -257,6 +257,10 @@
     var s=F.time.format(e.startMs);
     return s;
   }
+  function endTimeStr(e){
+    if (e.allDay || !e.endMs) return "";
+    return F.time.format(e.endMs);
+  }
   function subtitleFor(k){
     var wl=F.wdLong.format(keyUTC(k).getTime()); // weekday name
     return wl + ", " + dayNum(k) + " ב" + F.monthLong.format(keyUTC(k).getTime());
@@ -270,6 +274,13 @@
     }
     return "";
   }
+  // Subtle per-kid background tint, parent view only — a shared ("both"-owned) event stays neutral.
+  function ownerClass(e){
+    if (S.kid!=="both") return "";
+    if (e.owner==="amit") return " owner-amit";
+    if (e.owner==="nadav") return " owner-nadav";
+    return "";
+  }
 
   /* ---------- render ---------- */
   function render(){
@@ -277,22 +288,24 @@
     if (S.view==="day"){ title="היום"; sub=subtitleFor(todayKey()); }
     else if (S.view==="week"){ title="השבוע"; sub=weekRange(); }
     else if (S.view==="month"){ title=monthLabel(S.monthYM); sub=""; }
-    else if (S.view==="search"){ title="חיפוש"; sub=""; }
-    else { title="מבחנים ומטלות"; sub=""; }
+    else if (S.view==="tests"){ title="מבחנים ומטלות"; sub=""; }
+    else if (S.view==="tasks"){ title="משימות"; sub=""; }
+    else { title="חיפוש"; sub=""; }
 
     var html = '<div class="hdr">'+
       '<div class="eyebrow">'+esc(S.name)+'</div>'+
       '<div class="h1">'+esc(title)+'</div>'+
       (sub?'<div class="sub">'+esc(sub)+'</div>':'')+
       '<div class="nav">'+
-        navBtn("day","היום")+navBtn("week","שבוע")+navBtn("month","חודש")+navBtn("tests","מבחנים")+navBtn("search","חיפוש")+
+        navBtn("day","היום")+navBtn("week","שבוע")+navBtn("month","חודש")+navBtn("tests","מבחנים")+navBtn("tasks","משימות")+navBtn("search","חיפוש")+
       '</div></div>';
 
     if (S.view==="day") html += dayView();
     else if (S.view==="week") html += weekView();
     else if (S.view==="month") html += monthView();
-    else if (S.view==="search") html += searchView();
-    else html += testsView();
+    else if (S.view==="tests") html += testsView();
+    else if (S.view==="tasks") html += tasksView();
+    else html += searchView();
 
     // Re-rendering replaces the whole DOM, which would normally drop focus out of the search
     // box on every keystroke — restore it (and the caret position) when that's where it was.
@@ -312,12 +325,19 @@
   }
 
   function evCard(e){
-    return '<div class="ev'+(e.allDay?' allday':'')+'">'+
-      '<div class="t">'+(e.allDay?'כל היום':'<span class="time">'+esc(timeStr(e))+'</span>')+'</div>'+
+    // Removing an event, and the owner tint, are both parent-view-only — same "both" gate as the owner tags below.
+    var hideBtn = S.kid==="both"
+      ? '<button class="evhide" data-hide-id="'+esc(e.id)+'" data-hide-title="'+esc(e.title)+'" aria-label="הסתר">✕</button>'
+      : '';
+    var end = endTimeStr(e);
+    var timeHtml = e.allDay ? 'כל היום'
+      : '<span class="time">'+esc(timeStr(e))+'</span>'+(end?'<span class="time end-time">'+esc(end)+'</span>':'');
+    return '<div class="ev'+(e.allDay?' allday':'')+ownerClass(e)+'">'+
+      '<div class="t">'+timeHtml+'</div>'+
       '<div class="body"><div class="ttl">'+esc(e.title)+'</div>'+
         (e.location?'<div class="loc">📍 '+esc(e.location)+'</div>':'')+
         (ownerTag(e)?'<div class="tags">'+ownerTag(e)+'</div>':'')+
-      '</div></div>';
+      '</div>'+hideBtn+'</div>';
   }
 
   function countdownHTML(k){
@@ -336,7 +356,7 @@
     var rows = items.map(function(e){
       var k=dayKey(e.startMs), n=daysBetween(today,k);
       var who = (S.kid==="both" && (e.owner==="amit"||e.owner==="nadav")) ? ' · '+(e.owner==="amit"?"עמית":"נדב") : '';
-      return '<div class="exrow'+(n<=0?" today":"")+'">'+
+      return '<div class="exrow'+(n<=0?" today":"")+ownerClass(e)+'">'+
         '<div class="exdate"><div class="d time">'+shortDate(k)+'</div>'+
           '<div class="wd">'+esc(F.wdLong.format(keyUTC(k).getTime()))+'</div></div>'+
         '<div class="exmid"><div class="typ">'+esc(e.examLabel)+esc(who)+'</div>'+
@@ -350,12 +370,17 @@
 
   function searchRow(e){
     var k=dayKey(e.startMs);
-    return '<div class="ev'+(e.allDay?' allday':'')+'">'+
+    var hideBtn = S.kid==="both"
+      ? '<button class="evhide" data-hide-id="'+esc(e.id)+'" data-hide-title="'+esc(e.title)+'" aria-label="הסתר">✕</button>'
+      : '';
+    var end = endTimeStr(e);
+    var timeTag = '<span class="tag">'+esc(timeStr(e))+(end?'–'+esc(end):'')+'</span>';
+    return '<div class="ev'+(e.allDay?' allday':'')+ownerClass(e)+'">'+
       '<div class="t"><span class="time">'+shortDate(k)+'</span></div>'+
       '<div class="body"><div class="ttl">'+esc(e.title)+'</div>'+
         (e.location?'<div class="loc">📍 '+esc(e.location)+'</div>':'')+
-        '<div class="tags"><span class="tag">'+esc(timeStr(e))+'</span>'+ownerTag(e)+'</div>'+
-      '</div></div>';
+        '<div class="tags">'+timeTag+ownerTag(e)+'</div>'+
+      '</div>'+hideBtn+'</div>';
   }
   function searchView(){
     var box='<div class="pad"><input id="searchInput" class="searchbox" type="text" '+
@@ -374,7 +399,7 @@
     var evs = eventsOn(todayKey());
     var list = evs.length ? '<div class="pad">'+evs.map(evCard).join("")+'</div>'
                           : '<div class="empty">אין אירועים היום</div>';
-    return '<div class="stage">'+list+'</div>'+sheet();
+    return '<div class="stage">'+list+'</div>';
   }
 
   function weekRange(){
@@ -428,15 +453,9 @@
     return '<div class="stage">'+nav+g+'</div>'+ (S.monthSheet?monthSheet():"");
   }
 
-  /* ---------- tasks sheet ---------- */
-  function openTaskCount(){ return (S.tasks.open||[]).length; }
-  function sheet(){
-    var expanded=S.sheet==="expanded";
-    var head='<div class="grip"></div><div class="sheet-head" data-sheet-toggle>'+
-      '<span class="lbl">משימות</span>'+
-      (expanded?'<button class="back" data-sheet-collapse>‹ חזרה ללוח</button>':'<span class="cnt">'+openTaskCount()+' היום</span>')+'</div>';
-    var body = expanded ? '<div class="sheet-body">'+taskList()+'</div>' : '';
-    return '<div class="sheet'+(expanded?' expanded':'')+'">'+head+body+'</div>';
+  /* ---------- tasks ---------- */
+  function tasksView(){
+    return '<div class="stage"><div class="pad">'+taskList()+'</div></div>';
   }
   function taskList(){
     if (S.kid==="both") return bothTaskList();
@@ -491,7 +510,7 @@
   /* ---------- events ---------- */
   function wire(){
     app.querySelectorAll(".nav button").forEach(function(b){
-      b.onclick=function(){ S.view=b.dataset.view; if(S.view!=="day") S.sheet="collapsed"; S.monthSheet=null; if(S.view==="month") S.monthYM=todayKey().slice(0,7); if(S.view==="week") S.weekSel=todayKey(); render(); };
+      b.onclick=function(){ S.view=b.dataset.view; S.monthSheet=null; if(S.view==="month") S.monthYM=todayKey().slice(0,7); if(S.view==="week") S.weekSel=todayKey(); render(); };
     });
     app.querySelectorAll(".strip .d").forEach(function(b){
       b.onclick=function(){ S.weekSel=b.dataset.day; render(); };
@@ -506,10 +525,6 @@
     var wn=app.querySelector("[data-wnext]"); if(wn) wn.onclick=function(){ shiftWeek(1); };
     var wt=app.querySelector("[data-wtoday]"); if(wt) wt.onclick=function(){ S.weekSel=todayKey(); render(); };
 
-    var tog=app.querySelector("[data-sheet-toggle]");
-    if (tog) tog.onclick=function(){ S.sheet = S.sheet==="expanded"?"collapsed":"expanded"; render(); };
-    var backBtn=app.querySelector("[data-sheet-collapse]");
-    if (backBtn) backBtn.onclick=function(e){ e.stopPropagation(); S.sheet="collapsed"; render(); };
     app.querySelectorAll("[data-sheet-close]").forEach(function(el){ el.onclick=function(){ S.monthSheet=null; render(); }; });
 
     app.querySelectorAll("[data-newtask]").forEach(function(input){
