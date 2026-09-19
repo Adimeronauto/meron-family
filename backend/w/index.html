@@ -266,12 +266,15 @@
     return wl + ", " + dayNum(k) + " ב" + F.monthLong.format(keyUTC(k).getTime());
   }
   function ownerTag(e){
-    if (e.isTest) return '<span class="tag test">מבחן</span>';
+    // On the shared ("both") board, a test's own name doesn't say whose it is — show the kid's
+    // name instead of the generic מבחן label, but keep the bold test styling. On a kid's own
+    // board there's no ambiguity, so מבחן alone is still the useful label.
     if (S.kid==="both"){
-      if (e.owner==="amit") return '<span class="tag">עמית</span>';
-      if (e.owner==="nadav") return '<span class="tag">נדב</span>';
-      if (e.owner==="both") return '<span class="tag">עמית ונדב</span>';
+      if (e.owner==="amit") return '<span class="tag'+(e.isTest?' test':'')+'">עמית</span>';
+      if (e.owner==="nadav") return '<span class="tag'+(e.isTest?' test':'')+'">נדב</span>';
+      if (e.owner==="both") return '<span class="tag'+(e.isTest?' test':'')+'">עמית ונדב</span>';
     }
+    if (e.isTest) return '<span class="tag test">מבחן</span>';
     return "";
   }
   // Subtle per-kid background tint, parent view only — a shared ("both"-owned) event stays neutral.
