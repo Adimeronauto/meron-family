@@ -128,7 +128,11 @@
   .donehdr .chev{font-size:11px; width:12px; text-align:center}
   .donehdr .clear{appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:14px; font-weight:600; color:var(--muted)}
   .krow .kdel{flex:none; appearance:none; background:none; border:0; cursor:pointer; font-family:inherit; font-size:17px; color:var(--faint); padding:0 2px; line-height:1}
-  .group-h{font-size:13px; font-weight:700; color:var(--muted); padding:14px 0 4px}
+  .group-h{font-size:22px; font-weight:800; color:var(--ink); padding:0 0 8px}
+  .task-group{border-radius:18px; padding:16px 16px 6px; margin-bottom:10px}
+  .task-group.owner-amit{background:var(--amit-bg)}
+  .task-group.owner-nadav{background:var(--nadav-bg)}
+  .task-group + .task-group{margin-top:6px}
   .tasks-empty{text-align:center; color:var(--muted); padding:28px 0; font-size:15px}
 
   /* tests & homework list */
@@ -491,11 +495,13 @@
     var open=S.tasks.open||[], html="";
     [["amit","עמית"],["nadav","נדב"]].forEach(function(p){
       var mine=open.filter(function(t){return t.owner===p[0];});
+      html+='<div class="task-group owner-'+p[0]+'">';
       html+='<div class="group-h">'+p[1]+'</div>';
       html+= mine.length ? mine.map(openRow).join("") : '<div class="tasks-empty">אין משימות פתוחות</div>';
       html+='<div class="addrow2"><span class="plus">+</span>'+
         '<input id="newtask-'+p[0]+'" data-newtask data-owner="'+p[0]+'" type="text" '+
           'placeholder="פריט חדש ל'+p[1]+'" enterkeyhint="done" maxlength="200"></div>';
+      html+='</div>';
     });
     return html;
   }
