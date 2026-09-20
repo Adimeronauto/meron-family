@@ -3,6 +3,7 @@
 
 import { getClient } from "../../lib/google-auth.mjs";
 import { sendMorningToAll } from "../../lib/morning-send.mjs";
+import { MORNING_DIGEST_ENABLED } from "../../config/rules.mjs";
 
 export const config = { maxDuration: 60 };
 
@@ -10,6 +11,10 @@ export default async function handler(req, res) {
   const provided = req.query?.key ?? req.headers["x-cron-key"];
   if (!process.env.CRON_SECRET || provided !== process.env.CRON_SECRET) {
     return res.status(401).json({ ok: false, error: "unauthorized" });
+  }
+
+  if (!MORNING_DIGEST_ENABLED) {
+    return res.status(200).json({ ok: true, skipped: true, reason: "MORNING_DIGEST_ENABLED is false" });
   }
 
   try {

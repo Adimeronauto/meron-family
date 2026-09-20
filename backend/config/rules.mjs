@@ -54,3 +54,10 @@ export const NO_REMINDER_MARKER = "🔕";
 export const TEST_ALERT_DAYS = [5, 3];
 
 export const TIMEZONE = "Asia/Jerusalem";
+
+// The 07:30 daily Telegram summary (backend/api/cron/morning.mjs) is triggered by an external
+// pinger (cron-job.org), not by anything in this repo or Vercel's own cron — so there's no
+// schedule to remove here. This flag is the actual on/off switch: false makes the endpoint
+// reply "skipped" without sending anything, still cheap for the external pinger to hit. Flip
+// back to true to resume it.
+export const MORNING_DIGEST_ENABLED = false;
