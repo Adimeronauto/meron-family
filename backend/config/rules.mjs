@@ -34,11 +34,15 @@ export const SUBMISSION_KEYWORDS = ["הגשה", "להגיש"];
 // boundaries (never as a substring of a longer word like קריאה / כתיבה).
 export const EXCLUDE_TITLE_KEYWORDS = ["יא", "יב", "כדורסל", "כיתות רקיע", "מחול", "אמנות"];
 
-// Amit's own class within grade י (10th) — some school-calendar titles scope an event to
-// specific classes, e.g. a single other class ("י10", not his) or a list/range ("י3-י9,
-// י11-י14", which does include his). See excludedByClass() in classify.mjs. Update this if he
-// moves to a different class.
-export const AMIT_CLASS_NUMBER = 5;
+// Each kid's own class number within their grade — some school-calendar titles scope an event
+// to specific classes, e.g. a single other class ("י10", not עמית's) or a list/range ("י3-י9,
+// י11-י14", which does include his). Keyed by the Hebrew grade letter used in these titles (י =
+// 10th grade, ז = 7th grade). See excludedByClass() in classify.mjs. Update the relevant number
+// if either kid moves to a different class.
+export const CLASS_NUMBERS = {
+  י: 5, // עמית — כיתה י' 5
+  ז: 1, // נדב — כיתה ז' 1
+};
 
 // Add this emoji anywhere in an event's title (right in Google Calendar, on any calendar) to
 // silently skip its overlay reminder — the event still shows normally in the day/week/month

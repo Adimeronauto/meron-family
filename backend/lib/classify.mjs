@@ -9,7 +9,7 @@ import {
   HOMEWORK_KEYWORDS,
   SUBMISSION_KEYWORDS,
   EXCLUDE_TITLE_KEYWORDS,
-  AMIT_CLASS_NUMBER,
+  CLASS_NUMBERS,
   NO_REMINDER_MARKER,
   TIMEZONE,
 } from "../config/rules.mjs";
@@ -21,38 +21,47 @@ const EXCLUDE_RE = EXCLUDE_TITLE_KEYWORDS.map(
   (kw) => new RegExp(`(^|[^${HEB}])${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^${HEB}])`)
 );
 
-// A grade-י (10th grade) class reference: "י10" (one class), or "י3-י9" (a range, second "י"
-// optional). Global, and reset via lastIndex before each use since it's shared/stateful.
-const CLASS_TOKEN_RE = new RegExp(`(?:^|[^${HEB}])י(\\d{1,2})(?:\\s*-\\s*י?(\\d{1,2}))?`, "g");
+// A grade-letter class reference: "י10" (one class), or "י3-י9" (a range, second letter
+// optional). Only the grade letters we actually have a class number for (config/rules.mjs)
+// are matched, so this never fires on an unrelated Hebrew letter. Global, and reset via
+// lastIndex before each use since it's shared/stateful.
+const GRADE_LETTERS = Object.keys(CLASS_NUMBERS).join("");
+const CLASS_TOKEN_RE = new RegExp(
+  `(?:^|[^${HEB}])([${GRADE_LETTERS}])(\\d{1,2})(?:\\s*-\\s*[${GRADE_LETTERS}]?(\\d{1,2}))?`,
+  "g"
+);
 
-/** Every class number a school title names for grade י, expanding any ranges. Empty = none named. */
+/** Every class number a school title names, per grade letter found, expanding any ranges. */
 function classNumbersInTitle(title) {
   const text = title ?? "";
-  const nums = new Set();
+  const byGrade = {};
   CLASS_TOKEN_RE.lastIndex = 0;
   let m;
   while ((m = CLASS_TOKEN_RE.exec(text))) {
-    const a = Number(m[1]);
-    if (m[2] == null) {
+    const grade = m[1];
+    const nums = (byGrade[grade] ??= new Set());
+    const a = Number(m[2]);
+    if (m[3] == null) {
       nums.add(a);
       continue;
     }
-    const b = Number(m[2]);
+    const b = Number(m[3]);
     const [lo, hi] = a <= b ? [a, b] : [b, a];
     for (let n = lo; n <= hi; n++) nums.add(n);
   }
-  return nums;
+  return byGrade;
 }
 
 /**
- * True if a school title explicitly scopes itself to grade-י classes that do NOT include Amit's
- * own class — e.g. "...בוחן יומן קריאה י10" excludes him (he's in י5); "...(י3-י9, י11-י14)"
- * includes him. A title naming no classes at all is never excluded by this rule — it only kicks
- * in once a title is class-specific.
+ * True if a school title explicitly scopes itself to classes within a grade that do NOT include
+ * our own kid's class for that grade — e.g. "...בוחן יומן קריאה י10" excludes עמית (he's in
+ * י5); "...(י3-י9, י11-י14)" includes him; "ז4" would exclude נדב (he's in ז1). A title naming
+ * no classes at all is never excluded by this rule — it only kicks in once a title is
+ * class-specific.
  */
 export function excludedByClass(title) {
-  const nums = classNumbersInTitle(title);
-  return nums.size > 0 && !nums.has(AMIT_CLASS_NUMBER);
+  const byGrade = classNumbersInTitle(title);
+  return Object.entries(byGrade).some(([grade, nums]) => nums.size > 0 && !nums.has(CLASS_NUMBERS[grade]));
 }
 
 /** True if a (school-calendar) title belongs to another grade/class and should be dropped. */
@@ -144,18 +153,20 @@ export function cleanTitle(title) {
   t = t.replace(/\b(amit|nadav|family)\b/gi, " ");
   t = t.replace(/עמית|נדב|משפחה/g, " ");
 
-  // Embedded times and ranges: "1700", "18:30", "18 עד 19:30", "עד", "1830 עד 2030". A bare 1-2
-  // digit number is only ever a leftover time when it sits directly against "עד" — anywhere else
-  // in the title it's real content (e.g. "מתכונת 2 במתמטיקה", a class/round number) and must be
-  // kept, so there is no longer a blanket "strip any lone number" pass.
+  // Embedded times and ranges: "1700", "18:30", "18 עד 19:30", "עד", "1830 עד 2030". A bare
+  // number (1-4 digits, no colon) is only ever a leftover time when it sits directly against
+  // "עד" — the range word is what makes it unambiguous. A bare number ANYWHERE else — even one
+  // that happens to look like a time, e.g. "1234" — is real content (a reference/card number, a
+  // class/round number like "מתכונת 2") and must be kept: a previous blanket \b\d{3,4}\b sweep
+  // here (for un-ranged raw times like "1700") stripped those too, e.g. turning "...על שם מ.
+  // 1234" into "...על שם מ.".
   // \b never matches around Hebrew letters in JS (they aren't \w) — every pattern below keeps
   // its \b strictly on the digit side and uses (^|\s)/(?=\s|$) on the "עד" side instead, same as
   // the original bare-עד line already had to (see its own comment).
   t = t.replace(/\b\d{1,2}:\d{2}\b/g, " "); // 18:30
-  t = t.replace(/\b\d{3,4}\b/g, " "); // 1700, 1830
-  t = t.replace(/\b\d{1,2}\s+עד\s+\d{1,2}\b/g, " "); // "18 עד 19" — both bare numbers, one range
-  t = t.replace(/\b\d{1,2}\s+עד(?=\s|$)/g, " "); // "18 עד ..." — leading bare number only
-  t = t.replace(/(^|\s)עד\s+\d{1,2}\b/g, " "); // "... עד 19" — trailing bare number only
+  t = t.replace(/\b\d{1,4}\s+עד\s+\d{1,4}\b/g, " "); // "18 עד 19" / "1830 עד 2030" — full range
+  t = t.replace(/\b\d{1,4}\s+עד(?=\s|$)/g, " "); // "18 עד ..." — leading bare number only
+  t = t.replace(/(^|\s)עד\s+\d{1,4}\b/g, " "); // "... עד 19" — trailing bare number only
   t = t.replace(/(^|\s)עד(?=\s|$)/g, " "); // any leftover bare "עד", e.g. once "19:30" is already gone
 
   // Leftover separators and whitespace.
